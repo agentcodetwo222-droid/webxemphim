@@ -53,16 +53,14 @@ namespace webxemphim.Infrastructure
             services.AddDistributedMemoryCache();
             services.AddSession(options =>
             {
-                options.IdleTimeout        = TimeSpan.FromMinutes(30);
-                // Không dùng __Host- prefix trên Railway vì app chạy sau reverse proxy HTTP
-                // __Host- yêu cầu kết nối HTTPS trực tiếp đến app, không hoạt động với proxy
-                options.Cookie.Name        = "App-Session";
-                options.Cookie.HttpOnly    = true;
-                options.Cookie.IsEssential = true;
-                options.Cookie.SecurePolicy = env.IsDevelopment()
-                    ? CookieSecurePolicy.SameAsRequest
-                    : CookieSecurePolicy.Always;
-                options.Cookie.SameSite    = SameSiteMode.Strict;
+                options.IdleTimeout         = TimeSpan.FromMinutes(30);
+                options.Cookie.Name         = "App-Session";
+                options.Cookie.HttpOnly     = true;
+                options.Cookie.IsEssential  = true;
+                // SameAsRequest: Railway proxy handle HTTPS, app nhận HTTP nội bộ
+                // Cookie vẫn an toàn vì Railway enforce HTTPS ở tầng ngoài
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SameSite     = SameSiteMode.Strict;
             });
         }
 
@@ -71,14 +69,12 @@ namespace webxemphim.Infrastructure
         {
             services.AddAntiforgery(options =>
             {
-                // Không dùng __Host- prefix — Railway proxy làm HTTP internally
-                options.Cookie.Name        = "App-AF";
-                options.Cookie.HttpOnly    = true;
-                options.Cookie.SecurePolicy = env.IsDevelopment()
-                    ? CookieSecurePolicy.SameAsRequest
-                    : CookieSecurePolicy.Always;
-                options.Cookie.SameSite    = SameSiteMode.Strict;
-                options.HeaderName         = "X-CSRF-TOKEN";
+                options.Cookie.Name         = "App-AF";
+                options.Cookie.HttpOnly     = true;
+                // SameAsRequest: tương thích với Railway reverse proxy
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SameSite     = SameSiteMode.Strict;
+                options.HeaderName          = "X-CSRF-TOKEN";
             });
         }
 
@@ -119,8 +115,7 @@ namespace webxemphim.Infrastructure
         /// </summary>
         public static WebApplication UseTransportSecurity(this WebApplication app)
         {
-            // Railway chạy app sau reverse proxy — cần đọc X-Forwarded-* headers
-            // để biết request thật là HTTPS dù app nhận HTTP internally
+            // Railway chạy app sau reverse proxy — đọc X-Forwarded-* headers
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -130,11 +125,8 @@ namespace webxemphim.Infrastructure
             {
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
-            }
-
-            if (!app.Environment.IsDevelopment())
-            {
-                app.UseHttpsRedirection();
+                // KHÔNG dùng UseHttpsRedirection — Railway proxy đã handle HTTPS
+                // UseHttpsRedirection gây redirect loop sau proxy
             }
 
             return app;
