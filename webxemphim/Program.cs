@@ -19,9 +19,12 @@ builder.Services.AddSecurityServices(builder.Configuration, builder.Environment)
 builder.Services.AddSingleton<EncryptionService>();
 
 // ── Database ───────────────────────────────────────────────────────────────
+// Railway inject DATABASE_URL dạng: postgresql://user:pass@host:port/dbname
+// Ưu tiên: DATABASE_URL (Railway) → DefaultConnection (local user-secrets)
+var connectionString = GetConnectionString(builder.Configuration);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        connectionString,
         npgsqlOptions => npgsqlOptions.CommandTimeout(30)
     ));
 
@@ -56,3 +59,28 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 app.Run();
+
+// ── Helper: đọc connection string từ Railway DATABASE_URL hoặc user-secrets ──
+static string GetConnectionString(IConfiguration config)
+{
+    // Railway cung cấp DATABASE_URL dạng postgresql://user:pass@host:port/dbname
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        // Chuyển postgresql:// URI → Npgsql connection string
+        var uri    = new Uri(databaseUrl);
+        var host   = uri.Host;
+        var port   = uri.Port > 0 ? uri.Port : 5432;
+        var db     = uri.AbsolutePath.TrimStart('/');
+        var user   = Uri.UnescapeDataString(uri.UserInfo.Split(':')[0]);
+        var pass   = Uri.UnescapeDataString(uri.UserInfo.Split(':')[1]);
+
+        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true";
+    }
+
+    // Local development: dùng user-secrets
+    return config.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException(
+            "Connection string chưa được cấu hình. " +
+            "Set DATABASE_URL (Railway) hoặc ConnectionStrings:DefaultConnection (user-secrets).");
+}
