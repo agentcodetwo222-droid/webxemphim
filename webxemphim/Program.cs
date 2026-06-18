@@ -63,24 +63,45 @@ app.Run();
 // ── Helper: đọc connection string từ Railway DATABASE_URL hoặc user-secrets ──
 static string GetConnectionString(IConfiguration config)
 {
-    // Railway cung cấp DATABASE_URL dạng postgresql://user:pass@host:port/dbname
-    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    // Railway có thể inject database URL qua nhiều tên biến khác nhau
+    // Thử lần lượt theo thứ tự ưu tiên
+    var databaseUrl =
+        Environment.GetEnvironmentVariable("DATABASE_URL")          ??
+        Environment.GetEnvironmentVariable("POSTGRES_URL")          ??
+        Environment.GetEnvironmentVariable("POSTGRESQL_URL")        ??
+        Environment.GetEnvironmentVariable("RAILWAY_DATABASE_URL")  ??
+        Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL");
+
     if (!string.IsNullOrEmpty(databaseUrl))
     {
-        // Chuyển postgresql:// URI → Npgsql connection string
-        var uri    = new Uri(databaseUrl);
-        var host   = uri.Host;
-        var port   = uri.Port > 0 ? uri.Port : 5432;
-        var db     = uri.AbsolutePath.TrimStart('/');
-        var user   = Uri.UnescapeDataString(uri.UserInfo.Split(':')[0]);
-        var pass   = Uri.UnescapeDataString(uri.UserInfo.Split(':')[1]);
+        try
+        {
+            // Chuyển postgresql:// URI → Npgsql connection string
+            var uri  = new Uri(databaseUrl);
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : 5432;
+            var db   = uri.AbsolutePath.TrimStart('/');
+            var userInfo = uri.UserInfo.Split(':', 2);
+            var user = Uri.UnescapeDataString(userInfo[0]);
+            var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
 
-        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true";
+            return $"Host={host};Port={port};Database={db};Username={user};Password={pass};" +
+                   "SSL Mode=Require;Trust Server Certificate=true";
+        }
+        catch
+        {
+            // Nếu URI parse thất bại, thử dùng thẳng làm connection string
+            return databaseUrl;
+        }
     }
 
     // Local development: dùng user-secrets
-    return config.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException(
-            "Connection string chưa được cấu hình. " +
-            "Set DATABASE_URL (Railway) hoặc ConnectionStrings:DefaultConnection (user-secrets).");
+    var local = config.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(local))
+        return local;
+
+    throw new InvalidOperationException(
+        "Không tìm thấy connection string. " +
+        "Railway: cần add PostgreSQL service và link vào app. " +
+        "Local: chạy 'dotnet user-secrets set ConnectionStrings:DefaultConnection <value>'");
 }
