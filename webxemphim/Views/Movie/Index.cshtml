@@ -1,0 +1,109 @@
+@model IEnumerable<webxemphim.Models.Movie>
+
+@{
+    ViewData["Title"] = "Danh sách phim";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Danh sách phim</h2>
+            
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+            
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @if (ViewBag.UserRole == "Admin")
+            {
+                <div class="mb-3">
+                    <a href="/Movie/Create" class="btn btn-primary">Thêm phim mới</a>
+                </div>
+            }
+
+            <div class="row">
+                @foreach (var movie in Model)
+                {
+                    <div class="col-md-4 col-lg-3 mb-4">
+                        <div class="card h-100" style="background: #232533; border: 1px solid #333;">
+                            <div class="position-relative">
+                                @if (!string.IsNullOrEmpty(movie.ImageUrl))
+                                {
+                                    <img src="@movie.ImageUrl" class="card-img-top" alt="@movie.Title" style="height: 200px; object-fit: cover;">
+                                }
+                                else
+                                {
+                                    <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: #333;">
+                                        <span class="text-muted">No Image</span>
+                                    </div>
+                                }
+                                
+                                @if (movie.IsVipOnly)
+                                {
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-warning text-dark">VIP</span>
+                                    </div>
+                                }
+                                
+                                @if (!movie.IsAvailable)
+                                {
+                                    <div class="position-absolute top-0 start-0 m-2">
+                                        <span class="badge bg-danger">Không khả dụng</span>
+                                    </div>
+                                }
+                            </div>
+                            
+                            <div class="card-body">
+                                <h5 class="card-title text-white">@movie.Title</h5>
+                                <p class="card-text text-muted small">@movie.Year • @movie.Country</p>
+                                <p class="card-text text-muted">@movie.Genre</p>
+                                
+                                @if (!string.IsNullOrEmpty(movie.Description))
+                                {
+                                    <p class="card-text text-white-50" style="font-size: 0.9em;">
+                                        @(movie.Description.Length > 100 ? movie.Description.Substring(0, 100) + "..." : movie.Description)
+                                    </p>
+                                }
+                            </div>
+                            
+                            <div class="card-footer" style="background: #1a1a1a; border-top: 1px solid #333;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="/Movie/Detail/@movie.MovieId" class="btn btn-outline-primary btn-sm">Chi tiết</a>
+                                    <a href="/Movie/Player/@movie.MovieId" class="btn btn-success btn-sm">▶ Xem phim</a>
+                                    
+                                    @if (ViewBag.UserRole == "Admin")
+                                    {
+                                        <div>
+                                            <a href="/Movie/Edit/@movie.MovieId" class="btn btn-outline-warning btn-sm">Sửa</a>
+                                            <a href="/Movie/Delete/@movie.MovieId" class="btn btn-outline-danger btn-sm">Xóa</a>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+                    <h4 class="text-muted">Chưa có phim nào</h4>
+                    @if (ViewBag.UserRole == "Admin")
+                    {
+                        <a href="/Movie/Create" class="btn btn-primary">Thêm phim đầu tiên</a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div> 

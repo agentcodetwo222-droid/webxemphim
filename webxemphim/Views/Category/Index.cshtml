@@ -1,0 +1,139 @@
+@model IEnumerable<webxemphim.Models.Category>
+
+@{
+    ViewData["Title"] = "Quản lý danh mục";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h2 class="mb-4" style="color: #ffd700; font-weight: bold; text-align: center;">
+                <i class="fas fa-folder" style="margin-right: 10px;"></i>
+                Quản lý danh mục phim
+            </h2>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <div class="card" style="background: #232533; border: 1px solid #333;">
+                <div class="card-header" style="background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="text-white mb-0">
+                            <i class="fas fa-list" style="margin-right: 8px; color: #ffd700;"></i>
+                            Danh sách danh mục
+                        </h5>
+                        <div>
+                            <a href="/Category/Initialize" class="btn btn-warning me-2">
+                                <i class="fas fa-magic" style="margin-right: 5px;"></i>
+                                Khởi tạo danh mục
+                            </a>
+                            <a href="/Category/Create" class="btn btn-primary">
+                                <i class="fas fa-plus" style="margin-right: 5px;"></i>
+                                Thêm danh mục
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center text-white py-4">
+                            <i class="fas fa-folder-open" style="font-size: 3rem; color: #666; margin-bottom: 1rem;"></i>
+                            <h5>Chưa có danh mục nào</h5>
+                            <p class="text-muted">Hãy khởi tạo danh mục hoặc thêm danh mục mới</p>
+                            <a href="/Category/Initialize" class="btn btn-warning">
+                                <i class="fas fa-magic" style="margin-right: 5px;"></i>
+                                Khởi tạo danh mục
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead style="background: #1a1a1a;">
+                                    <tr>
+                                        <th style="color: #ffd700;">STT</th>
+                                        <th style="color: #ffd700;">Tên danh mục</th>
+                                        <th style="color: #ffd700;">Loại</th>
+                                        <th style="color: #ffd700;">Mô tả</th>
+                                        <th style="color: #ffd700;">Trạng thái</th>
+                                        <th style="color: #ffd700;">Thứ tự</th>
+                                        <th style="color: #ffd700;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td>@item.CategoryId</td>
+                                            <td>
+                                                <i class="fas fa-folder" style="color: #ffd700; margin-right: 5px;"></i>
+                                                @item.Name
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@item.Type</span>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(item.Description))
+                                                {
+                                                    <span title="@item.Description">
+                                                        @(item.Description.Length > 50 ? item.Description.Substring(0, 50) + "..." : item.Description)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (item.IsActive)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check" style="margin-right: 3px;"></i>
+                                                        Hoạt động
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times" style="margin-right: 3px;"></i>
+                                                        Không hoạt động
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@item.SortOrder</span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="/Category/Edit/@item.CategoryId" class="btn btn-sm btn-warning me-1">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="/Category/Delete/@item.CategoryId" class="btn btn-sm btn-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

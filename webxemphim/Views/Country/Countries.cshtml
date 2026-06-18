@@ -1,0 +1,190 @@
+@{
+    ViewData["Title"] = "Quốc gia";
+}
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+        color: #fff;
+        min-height: 100vh;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .page-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 40px;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .countries-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 40px;
+    }
+
+    .country-item {
+        padding: 16px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        background: rgba(35, 37, 51, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .country-item:hover {
+        background: rgba(35, 37, 51, 0.6);
+        transform: translateX(8px);
+        border-color: rgba(255, 215, 0, 0.3);
+    }
+
+    .country-name {
+        font-size: 16px;
+        font-weight: 500;
+        color: #fff;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .back-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.8) 0%, rgba(45, 55, 72, 0.8) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+
+    .back-btn:hover {
+        background: linear-gradient(135deg, rgba(45, 55, 72, 0.9) 0%, rgba(55, 65, 82, 0.9) 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        color: #ffd700;
+    }
+
+    /* Responsive Design */
+    @@media screen and (max-width: 768px) {
+        .container {
+            padding: 20px 10px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+
+        .country-item {
+            padding: 14px 18px;
+        }
+
+        .country-name {
+            font-size: 15px;
+        }
+    }
+
+    @@media screen and (max-width: 480px) {
+        .container {
+            padding: 20px 10px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            margin-bottom: 25px;
+        }
+
+        .country-item {
+            padding: 12px 16px;
+        }
+
+        .country-name {
+            font-size: 14px;
+        }
+    }
+</style>
+
+<a href="/" class="back-btn">← Quay lại</a>
+
+<div class="container">
+    <h1 class="page-title">Quốc gia</h1>
+    
+    <div class="countries-list">
+        <div class="country-item">
+            <div class="country-name">Anh</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Canada</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Hàn Quốc</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Hồng Kông</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Mỹ</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Nhật Bản</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Pháp</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Thái Lan</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Trung Quốc</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Úc</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Đài Loan</div>
+        </div>
+        
+        <div class="country-item">
+            <div class="country-name">Đức</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Country item click events
+    document.querySelectorAll('.country-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const name = this.querySelector('.country-name').textContent;
+            console.log('Clicked country:', name);
+            // Add your navigation logic here
+        });
+    });
+</script> 

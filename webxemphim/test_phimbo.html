@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Phim Bộ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #181820;
+            color: #fff;
+        }
+        .test-section {
+            background: #232533;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .test-link {
+            display: inline-block;
+            background: #ffd700;
+            color: #232533;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .test-link:hover {
+            background: #ffed4e;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+        }
+        .error {
+            background: #dc3545;
+            color: white;
+        }
+        .info {
+            background: #17a2b8;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Chức năng Phim Bộ</h1>
+    
+    <div class="test-section">
+        <h2>📋 Hướng dẫn Test</h2>
+        <p>Để test chức năng phim bộ, hãy làm theo các bước sau:</p>
+        
+        <ol>
+            <li><strong>Đảm bảo ứng dụng đang chạy:</strong> Kiểm tra xem ứng dụng có chạy trên port 5000 không</li>
+            <li><strong>Truy cập trang phim bộ:</strong> Bấm vào link bên dưới</li>
+            <li><strong>Kiểm tra hiển thị phim:</strong> Xem có hiển thị 3 phim bộ không</li>
+            <li><strong>Test chức năng xem:</strong> Bấm nút "Chi tiết" và "Xem phim"</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Links Test</h2>
+        <a href="http://localhost:5000/Movie/Series" class="test-link" target="_blank">
+            📺 Trang Phim Bộ
+        </a>
+        <a href="http://localhost:5000/" class="test-link" target="_blank">
+            🏠 Trang Chủ
+        </a>
+        <a href="http://localhost:5000/Movie" class="test-link" target="_blank">
+            🎬 Tất cả Phim
+        </a>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Danh sách phim bộ cần hiển thị:</h2>
+        <ul>
+            <li><strong>Tazan Nhí: Cuộc Phiêu Lưu Kỳ Thú</strong> (Việt Nam, 2024)</li>
+            <li><strong>Thám Tử Conan: Tập 1</strong> (Nhật Bản, 1996)</li>
+            <li><strong>One Piece: Tập 1 - Tôi là Luffy</strong> (Nhật Bản, 1999)</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Troubleshooting</h2>
+        <div class="info">
+            <strong>Nếu không hiển thị phim:</strong>
+            <ul>
+                <li>Kiểm tra xem ứng dụng có đang chạy không</li>
+                <li>Refresh trang và thử lại</li>
+                <li>Kiểm tra console để xem có lỗi gì không</li>
+                <li>Đảm bảo database đã được cập nhật</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📱 Test Responsive</h2>
+        <p>Thử resize trình duyệt để test responsive design:</p>
+        <ul>
+            <li>Desktop (1200px+)</li>
+            <li>Tablet (768px - 1199px)</li>
+            <li>Mobile (< 768px)</li>
+        </ul>
+    </div>
+
+    <script>
+        // Auto-check if server is running
+        function checkServer() {
+            fetch('http://localhost:5000/')
+                .then(response => {
+                    if (response.ok) {
+                        document.body.insertAdjacentHTML('afterbegin', 
+                            '<div class="status success">✅ Server đang chạy trên localhost:5000</div>');
+                    }
+                })
+                .catch(error => {
+                    document.body.insertAdjacentHTML('afterbegin', 
+                        '<div class="status error">❌ Server không chạy. Hãy chạy lệnh: dotnet run</div>');
+                });
+        }
+
+        // Check server status when page loads
+        window.onload = checkServer;
+    </script>
+</body>
+</html>

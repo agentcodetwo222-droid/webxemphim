@@ -1,0 +1,295 @@
+@{
+    ViewData["Title"] = "Các chủ đề";
+}
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+        color: #fff;
+        min-height: 100vh;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .page-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 40px;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .topics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .topic-card {
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.95) 0%, rgba(45, 55, 72, 0.95) 100%);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .topic-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+        opacity: 0.3;
+        pointer-events: none;
+    }
+
+    .topic-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .topic-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 12px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .topic-link {
+        font-size: 14px;
+        color: #ffd700;
+        text-decoration: none;
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s;
+    }
+
+    .topic-link:hover {
+        color: #ffed4e;
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    }
+
+    /* Topic card colors */
+    .topic-card.marvel {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    }
+
+    .topic-card.keo-ly {
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    }
+
+    .topic-card.sitcom {
+        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+    }
+
+    .topic-card.ultra-hd {
+        background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+    }
+
+    .topic-card.dubbed {
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    }
+
+    .topic-card.peak {
+        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+    }
+
+    .topic-card.time-travel {
+        background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+    }
+
+    .topic-card.nine-x {
+        background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+    }
+
+    .topic-card.historical {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    }
+
+    .topic-card.ambition {
+        background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+    }
+
+    .topic-card.healing {
+        background: linear-gradient(135deg, #f9a8d4 0%, #fce7f3 100%);
+    }
+
+    .topic-card.wizard {
+        background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+    }
+
+    .back-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.8) 0%, rgba(45, 55, 72, 0.8) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+
+    .back-btn:hover {
+        background: linear-gradient(135deg, rgba(45, 55, 72, 0.9) 0%, rgba(55, 65, 82, 0.9) 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        color: #ffd700;
+    }
+
+    /* Responsive Design */
+    @@media screen and (max-width: 768px) {
+        .topics-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .topic-card {
+            padding: 20px;
+        }
+
+        .topic-title {
+            font-size: 16px;
+        }
+    }
+
+    @@media screen and (max-width: 480px) {
+        .container {
+            padding: 20px 10px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+
+        .topics-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .topic-card {
+            padding: 16px;
+        }
+
+        .topic-title {
+            font-size: 14px;
+        }
+
+        .topic-link {
+            font-size: 12px;
+        }
+    }
+</style>
+
+<a href="/" class="back-btn">← Quay lại</a>
+
+<div class="container">
+    <h1 class="page-title">Các chủ đề</h1>
+    
+    <div class="topics-grid">
+        <div class="topic-card marvel">
+            <div class="topic-title">Marvel</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card keo-ly">
+            <div class="topic-title">Keo Lỳ Slayyy</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card sitcom">
+            <div class="topic-title">Sitcom</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card ultra-hd">
+            <div class="topic-title">4K</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card dubbed">
+            <div class="topic-title">Lồng Tiếng Cực Mạnh</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card peak">
+            <div class="topic-title">Đỉnh Nóc</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card time-travel">
+            <div class="topic-title">Xuyên Không</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card nine-x">
+            <div class="topic-title">9x</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card historical">
+            <div class="topic-title">Cổ Trang</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card ambition">
+            <div class="topic-title">Tham Vọng</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card healing">
+            <div class="topic-title">Chữa Lành</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+        
+        <div class="topic-card wizard">
+            <div class="topic-title">Phù Thủy</div>
+            <a href="#" class="topic-link">Xem toàn bộ ></a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Topic card click events
+    document.querySelectorAll('.topic-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const title = this.querySelector('.topic-title').textContent;
+            console.log('Clicked topic:', title);
+            // Add your navigation logic here
+        });
+    });
+
+    // Topic link click events
+    document.querySelectorAll('.topic-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const title = this.parentElement.querySelector('.topic-title').textContent;
+            console.log('View all for topic:', title);
+            // Add your navigation logic here
+        });
+    });
+</script> 

@@ -1,0 +1,53 @@
+@model webxemphim.Controllers.BillViewModel
+
+@{
+    ViewData["Title"] = "Xóa hóa đơn";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <h2 class="mb-4" style="color:#e74c3c;font-weight:bold;text-align:center;">
+                <i class="fas fa-trash" style="margin-right:10px;"></i>Xác nhận xóa hóa đơn
+            </h2>
+
+            <div class="card" style="background:#232533;border:1px solid #e74c3c;">
+                <div class="card-body">
+                    <p class="text-white">Bạn có chắc muốn xóa hóa đơn này không?</p>
+                    <hr style="border-color:#333;" />
+
+                    <dl class="row text-white">
+                        <dt class="col-sm-4" style="color:#ffd700;">Mã HĐ</dt>
+                        <dd class="col-sm-8"><code style="color:#ffd700;">@Model.BillCode</code></dd>
+
+                        <dt class="col-sm-4" style="color:#ffd700;">User</dt>
+                        <dd class="col-sm-8">@Model.UserName (@Model.UserEmail)</dd>
+
+                        <dt class="col-sm-4" style="color:#ffd700;">Dịch vụ</dt>
+                        <dd class="col-sm-8">@Model.ServiceName</dd>
+
+                        <dt class="col-sm-4" style="color:#ffd700;">Số tiền</dt>
+                        <dd class="col-sm-8 @(Model.AmountInVND >= 0 ? "text-success" : "text-danger")">
+                            @(Model.AmountInVND >= 0 ? "+" : "")@Model.AmountInVND.ToString("N0") ₫
+                        </dd>
+
+                        <dt class="col-sm-4" style="color:#ffd700;">Ngày tạo</dt>
+                        <dd class="col-sm-8">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+
+                    <form asp-action="Delete">
+                        <input type="hidden" asp-for="BillId" />
+                        <div class="d-flex justify-content-between mt-3">
+                            <a href="/Bill" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left" style="margin-right:5px;"></i>Hủy
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash" style="margin-right:5px;"></i>Xóa hóa đơn
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

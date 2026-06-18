@@ -1,0 +1,202 @@
+@{
+    ViewData["Title"] = "Nạp tiền";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="mb-4">Nạp tiền</h2>
+            
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <div class="card" style="background: #232533; border: 1px solid #333;">
+                <div class="card-body">
+                    <h5 class="card-title text-white mb-4">Chọn loại tiền tệ và số tiền nạp</h5>
+                    
+                    <form asp-action="Deposit" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <!-- Chọn loại tiền tệ -->
+                        <div class="mb-4">
+                            <label for="currencyCode" class="form-label text-white">Chọn loại tiền tệ:</label>
+                            <select class="form-select" id="currencyCode" name="currencyCode" 
+                                    style="background: #1a1a1a; border: 1px solid #333; color: #fff;">
+                                @if (ViewBag.Currencies != null)
+                                {
+                                    foreach (var currency in ViewBag.Currencies)
+                                    {
+                                        <option value="@currency.Code" data-rate="@currency.ExchangeRate" data-symbol="@currency.Symbol">
+                                            @currency.Name (@currency.Symbol) - 1 @currency.Code = @currency.ExchangeRate.ToString("N0") VNĐ
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Số tiền nạp -->
+                        <div class="mb-4">
+                            <label for="amount" class="form-label text-white">Số tiền nạp:</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       style="background: #1a1a1a; border: 1px solid #333; color: #fff;" 
+                                       placeholder="Nhập số tiền" min="1" step="0.01" required>
+                                <span class="input-group-text" id="currencySymbol" style="background: #333; color: #fff; border: 1px solid #333;">₫</span>
+                            </div>
+                        </div>
+
+                        <!-- Hiển thị số tiền quy đổi -->
+                        <div class="mb-4">
+                            <div class="alert alert-info" id="conversionInfo" style="background: #1a1a1a; border: 1px solid #333; color: #fff;">
+                                <strong>Số tiền quy đổi:</strong> <span id="convertedAmount">0 VNĐ</span>
+                            </div>
+                        </div>
+
+                        <!-- Các mức tiền có sẵn theo loại tiền tệ -->
+                        <div class="mb-4">
+                            <label class="form-label text-white">Chọn nhanh:</label>
+                            <div class="row" id="quickAmounts">
+                                <!-- VND amounts -->
+                                <div class="col-6 mb-2">
+                                    <button type="button" class="btn btn-outline-primary w-100 quick-amount" data-amount="50000">50,000</button>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <button type="button" class="btn btn-outline-primary w-100 quick-amount" data-amount="100000">100,000</button>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <button type="button" class="btn btn-outline-primary w-100 quick-amount" data-amount="200000">200,000</button>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <button type="button" class="btn btn-outline-primary w-100 quick-amount" data-amount="500000">500,000</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">Nạp tiền</button>
+                            <a href="/Wallet" class="btn btn-secondary">Quay lại</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4" style="background: #232533; border: 1px solid #333;">
+                <div class="card-body">
+                    <h6 class="card-title text-white">Lưu ý:</h6>
+                    <ul class="text-light">
+                        <li>Tất cả tiền tệ sẽ được chuyển đổi sang VNĐ theo tỷ giá hiện tại</li>
+                        <li>Số tiền sẽ được cộng vào ví ngay lập tức</li>
+                        <li>Bạn có thể sử dụng số tiền này để mua gói VIP</li>
+                        <li>Tỷ giá được cập nhật định kỳ</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Các mức tiền theo loại tiền tệ với tỷ giá thực tế
+        const currencyAmounts = {
+            'VND': [50000, 100000, 200000, 500000],
+            'USD': [1, 5, 10, 20],
+            'EUR': [1, 5, 10, 20],
+            'JPY': [1000, 5000, 10000, 20000],
+            'KRW': [10000, 50000, 100000, 200000],
+            'CNY': [10, 50, 100, 200],
+            'SGD': [10, 50, 100, 200],
+            'THB': [100, 500, 1000, 2000],
+            'MYR': [10, 50, 100, 200],
+            'IDR': [10000, 50000, 100000, 200000],
+            'GBP': [1, 5, 10, 20],
+            'AUD': [5, 10, 20, 50],
+            'CAD': [5, 10, 20, 50],
+            'CHF': [1, 5, 10, 20],
+            'HKD': [10, 50, 100, 200],
+            'TWD': [100, 500, 1000, 2000],
+            'PHP': [100, 500, 1000, 2000],
+            'INR': [100, 500, 1000, 2000],
+            'BRL': [5, 10, 20, 50]
+        };
+
+        // Lấy thông tin tiền tệ hiện tại
+        function updateCurrencyInfo() {
+            const select = document.getElementById('currencyCode');
+            const selectedOption = select.options[select.selectedIndex];
+            const symbol = selectedOption.getAttribute('data-symbol');
+            const rate = parseFloat(selectedOption.getAttribute('data-rate'));
+            const currencyCode = selectedOption.value;
+            
+            document.getElementById('currencySymbol').textContent = symbol;
+            
+            // Cập nhật placeholder
+            document.getElementById('amount').placeholder = `Nhập số tiền (${symbol})`;
+            
+            // Cập nhật các nút chọn nhanh
+            updateQuickAmounts(currencyCode);
+            
+            // Cập nhật thông tin chuyển đổi
+            updateConversion();
+        }
+
+        // Cập nhật các nút chọn nhanh theo loại tiền tệ
+        function updateQuickAmounts(currencyCode) {
+            const amounts = currencyAmounts[currencyCode] || [10, 20, 50, 100];
+            const container = document.getElementById('quickAmounts');
+            container.innerHTML = '';
+            
+            amounts.forEach(amount => {
+                const col = document.createElement('div');
+                col.className = 'col-6 mb-2';
+                col.innerHTML = `<button type="button" class="btn btn-outline-primary w-100 quick-amount" data-amount="${amount}">${amount.toLocaleString()}</button>`;
+                container.appendChild(col);
+            });
+            
+            // Re-attach event listeners
+            document.querySelectorAll('.quick-amount').forEach(button => {
+                button.addEventListener('click', function() {
+                    const amount = this.getAttribute('data-amount');
+                    document.getElementById('amount').value = amount;
+                    updateConversion();
+                });
+            });
+        }
+
+        // Cập nhật thông tin chuyển đổi
+        function updateConversion() {
+            const amount = parseFloat(document.getElementById('amount').value) || 0;
+            const select = document.getElementById('currencyCode');
+            const selectedOption = select.options[select.selectedIndex];
+            const rate = parseFloat(selectedOption.getAttribute('data-rate'));
+            const symbol = selectedOption.getAttribute('data-symbol');
+            
+            const convertedAmount = amount * rate;
+            document.getElementById('convertedAmount').textContent = `${convertedAmount.toLocaleString('vi-VN')} VNĐ`;
+        }
+
+        // Xử lý thay đổi loại tiền tệ
+        document.getElementById('currencyCode').addEventListener('change', updateCurrencyInfo);
+        
+        // Xử lý thay đổi số tiền
+        document.getElementById('amount').addEventListener('input', updateConversion);
+        
+        // Xử lý nút chọn nhanh
+        document.querySelectorAll('.quick-amount').forEach(button => {
+            button.addEventListener('click', function() {
+                const amount = this.getAttribute('data-amount');
+                document.getElementById('amount').value = amount;
+                updateConversion();
+            });
+        });
+
+        // Khởi tạo khi trang load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrencyInfo();
+        });
+    </script>
+} 

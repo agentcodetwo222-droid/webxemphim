@@ -1,0 +1,770 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - webxemphim</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/webxemphim.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body {
+            background: #181820;
+            color: #fff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+        .custom-navbar {
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0 20px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: visible;
+        }
+        .navbar-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+            gap: 15px;
+            padding: 0 10px;
+            overflow: visible;
+        }
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 180px;
+            flex-shrink: 0;
+        }
+        .logo-home-btn .logo-text {
+            color: #ffd700;
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: -2px;
+        }
+        .logo-img {
+            height: 40px;
+            margin-left: 8px;
+        }
+        .logo-sub {
+            margin-left: 4px;
+        }
+        .custom-search {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 0 16px;
+            height: 48px;
+            min-width: 250px;
+            margin: 0 15px;
+            flex: 1;
+            max-width: 350px;
+        }
+        .custom-search input {
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-size: 1.1rem;
+            width: 100%;
+            outline: none;
+        }
+        .search-icon {
+            color: #fff;
+        }
+        .custom-nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-left: 15px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            position: relative;
+            overflow: visible;
+        }
+        .nav-link {
+            color: #fff;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            padding: 4px 8px;
+        }
+        .nav-link:hover {
+            color: #ffd700;
+        }
+                 .dropdown {
+             position: relative;
+         }
+         
+         /* Auth Buttons Styles */
+         .auth-buttons {
+             display: flex;
+             gap: 10px;
+             align-items: center;
+             margin-left: 15px;
+             flex-shrink: 0;
+             visibility: visible;
+             opacity: 1;
+             position: relative;
+             z-index: 1000;
+         }
+         
+         .auth-btn {
+             display: inline-block;
+             white-space: nowrap;
+             text-decoration: none;
+             transition: all 0.2s;
+             border-radius: 20px;
+             padding: 8px 20px;
+             font-size: 14px;
+             font-weight: 500;
+             cursor: pointer;
+             visibility: visible;
+             opacity: 1;
+             position: relative;
+             z-index: 1000;
+         }
+         
+         .login-btn {
+             background: transparent;
+             color: #fff;
+             border: 1px solid #fff;
+         }
+         
+         .login-btn:hover {
+             background: #fff;
+             color: #0f0f0f;
+         }
+         
+         .register-btn {
+             background: #ffd700;
+             color: #232533;
+             border: 1px solid #ffd700;
+         }
+         
+         .register-btn:hover {
+             background: #ffed4e;
+             border-color: #ffed4e;
+         }
+         
+         .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 16px;
+            box-sizing: border-box;
+        }
+        main {
+            min-height: 80vh;
+            padding-top: 72px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        /* Ẩn header/footer/padding khi ở trang Player */
+        body:has(.player-container) main {
+            padding-top: 0;
+            min-height: unset;
+        }
+        body:has(.player-container) .container {
+            max-width: unset;
+            padding: 0;
+            margin: 0;
+        }
+        body:has(.player-container) header,
+        body:has(.player-container) footer {
+            display: none !important;
+        }
+        body:has(.player-container) {
+            overflow: hidden;
+        }
+        footer {
+            background: #232533;
+            color: #fff;
+            text-align: center;
+            padding: 24px 32px;
+            font-size: 1rem;
+            margin-top: 40px;
+            width: 100vw;
+            box-sizing: border-box;
+        }
+
+        .footer-left {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 32px;
+            margin-top: 24px;
+            text-align: left;
+        }
+
+        .Info {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #ccc;
+        }
+
+        .Info p {
+            margin-bottom: 10px;
+        }
+
+        .footer-right {
+            flex-shrink: 0;
+            width: 360px;
+        }
+
+        @@media (max-width: 768px) {
+            .footer-left {
+                flex-direction: column;
+            }
+            .footer-right {
+                width: 100%;
+            }
+        }
+
+
+        /* User Profile Styles */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .user-profile:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #232533;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-name {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .user-role {
+            color: #ffd700;
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(35, 37, 51, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px 0;
+            margin-top: 8px;
+            min-width: 150px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+            z-index: 1001;
+        }
+
+        .user-profile:hover .user-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .user-dropdown-item {
+            display: block;
+            padding: 8px 16px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .user-dropdown-item:hover {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+        }
+
+        .user-dropdown-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 4px 0;
+        }
+
+        .hero-bg {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('/images/natra-bg.jpg');
+            background-position: center center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            color: #fff;
+            overflow: hidden;
+        }
+        .hero-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(30,32,44,0.7);
+            z-index: 1;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            height: 100vh;
+            padding-left: 80px;
+        }
+        .movie-info {
+            max-width: 600px;
+        }
+        .movie-title {
+            font-size: 64px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 0;
+        }
+        .movie-subtitle {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+        .movie-meta {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .meta-badge {
+            background: #232533;
+            color: #ffd700;
+            border-radius: 8px;
+            padding: 4px 12px;
+            font-weight: bold;
+            font-size: 16px;
+            border: 2px solid #ffd700;
+        }
+        .genre-tags {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .genre-tag {
+            background: #232533;
+            color: #fff;
+            border-radius: 8px;
+            padding: 4px 12px;
+            font-size: 14px;
+        }
+        .movie-desc {
+            font-size: 18px;
+            margin-bottom: 32px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .play-btn, .info-btn {
+            background: #ffd700;
+            color: #232533;
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            cursor: pointer;
+            border: none;
+        }
+        .carousel {
+            position: absolute;
+            bottom: 40px;
+            left: 80px;
+            display: flex;
+            gap: 16px;
+            z-index: 3;
+        }
+        .carousel-item {
+            width: 80px;
+            height: 56px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border 0.2s;
+        }
+        .carousel-item.active {
+            border: 2px solid #ffd700;
+        }
+        .carousel-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Responsive Design */
+        @@media screen and (max-width: 1200px) {
+            .navbar-content {
+                max-width: 100%;
+                padding: 0 5px;
+                gap: 10px;
+            }
+            .custom-search {
+                min-width: 200px;
+                margin: 0 10px;
+                max-width: 300px;
+            }
+            .custom-nav-links {
+                gap: 10px;
+                margin-left: 10px;
+            }
+                         .nav-link {
+                 font-size: 12px;
+                 padding: 3px 6px;
+             }
+             .auth-buttons {
+                 gap: 8px;
+                 margin-left: 10px;
+                 display: flex;
+                 visibility: visible;
+                 opacity: 1;
+             }
+             .auth-btn {
+                 padding: 6px 16px;
+                 font-size: 12px;
+                 display: inline-block;
+                 visibility: visible;
+                 opacity: 1;
+             }
+            .user-profile {
+                padding: 6px 12px;
+            }
+            .user-name {
+                font-size: 13px;
+            }
+            .user-role {
+                font-size: 10px;
+            }
+        }
+        
+        @@media screen and (max-width: 768px) {
+            .custom-navbar {
+                padding: 0 10px;
+                height: auto;
+            }
+            .navbar-content {
+                flex-direction: column;
+                height: auto;
+                padding: 10px;
+                gap: 8px;
+            }
+            .custom-search {
+                min-width: 100%;
+                margin: 8px 0;
+                order: 2;
+                max-width: 100%;
+            }
+            .custom-nav-links {
+                order: 3;
+                gap: 8px;
+                margin-left: 0;
+                justify-content: center;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+                         .nav-link {
+                 font-size: 11px;
+                 padding: 2px 4px;
+             }
+             
+             .auth-buttons {
+                 order: 1;
+                 margin-bottom: 8px;
+                 justify-content: center;
+                 gap: 8px;
+                 margin-left: 0;
+                 display: flex;
+                 visibility: visible;
+                 opacity: 1;
+             }
+             
+             .auth-btn {
+                 padding: 6px 12px;
+                 font-size: 12px;
+                 display: inline-block;
+                 visibility: visible;
+                 opacity: 1;
+             }
+
+             .user-profile {
+                padding: 5px 10px;
+            }
+            .user-name {
+                font-size: 12px;
+            }
+            .user-role {
+                font-size: 9px;
+            }
+        }
+        
+        @@media screen and (max-width: 480px) {
+            .custom-navbar {
+                height: auto;
+                padding: 10px;
+            }
+            .navbar-content {
+                gap: 8px;
+            }
+            .custom-nav-links {
+                gap: 8px;
+            }
+                         .nav-link {
+                 font-size: 11px;
+             }
+             
+             .auth-buttons {
+                 gap: 6px;
+                 justify-content: center;
+                 display: flex;
+                 visibility: visible;
+                 opacity: 1;
+             }
+             
+             .auth-btn {
+                 padding: 5px 10px;
+                 font-size: 10px;
+                 display: inline-block;
+                 visibility: visible;
+                 opacity: 1;
+             }
+
+             .user-profile {
+                padding: 4px 8px;
+            }
+            .user-name {
+                font-size: 11px;
+            }
+            .user-role {
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar custom-navbar">
+            <div class="navbar-content">
+                <div class="navbar-left">
+                    <a href="/" class="logo-home-btn" style="text-decoration:none;">
+                        <span class="logo-text">webxemphim</span>
+                    </a>
+                </div>
+                <div class="search-box custom-search">
+                    <form action="/Search/Search" method="post" style="display: flex; align-items: center; width: 100%;">
+                        <span class="search-icon" style="margin-right:8px;font-size:1.3em;">&#128269;</span>
+                        <input type="text" name="query" placeholder="Tìm kiếm phim, diễn viên" 
+                               style="background: transparent; border: none; color: #fff; outline: none; width: 100%;" />
+                    </form>
+                </div>
+                <div class="nav-links custom-nav-links">
+                    <a class="nav-link" href="/Topic/Topics">Chủ Đề</a>
+                    <div class="nav-link dropdown">
+                        <a href="/Genre/Genres">Thể loại <span style="font-size:0.8em;">&#9660;</span></a>
+                    </div>
+                    <a class="nav-link" href="#">Phim Lẻ</a>
+                    <a class="nav-link" href="/Movie/Series">Phim Bộ</a>
+                    <div class="nav-link dropdown">
+                        <a href="/Country/Countries">Quốc gia <span style="font-size:0.8em;">&#9660;</span></a>
+                    </div>
+                                         <a class="nav-link" href="#">Diễn Viên</a>
+                     <a class="nav-link" href="#">Lịch chiếu</a>
+                     
+                     @{
+                         var userId = Context.Session.GetString("UserId");
+                         var userName = Context.Session.GetString("UserName");
+                         var userRole = Context.Session.GetString("UserRole");
+                         
+                         // Debug: In ra thông tin session để kiểm tra
+                         System.Diagnostics.Debug.WriteLine($"Session - UserId: {userId}, UserName: {userName}, UserRole: {userRole}");
+                     }
+
+                     @if (!string.IsNullOrEmpty(userId))
+                     {
+                         <!-- User is logged in - show profile -->
+                         <div class="user-profile">
+                             <div class="user-avatar">
+                                 @(userName?.Substring(0, 1).ToUpper() ?? "U")
+                             </div>
+                             <div class="user-info">
+                                 <div class="user-name">@userName</div>
+                                 <div class="user-role">@userRole</div>
+                             </div>
+                             <div class="user-dropdown">
+                                 @if (userRole == "Admin")
+                                 {
+                                     <a href="/User" class="user-dropdown-item">Quản lý tài khoản</a>
+                                     <a href="/Movie" class="user-dropdown-item">Quản lý phim</a>
+                                     <a href="/Category" class="user-dropdown-item">Quản lý danh mục</a>
+                                     <a href="/Bill" class="user-dropdown-item">Quản lý hóa đơn</a>
+                                     <div class="user-dropdown-divider"></div>
+                                 }
+                                 else
+                                 {
+                                     <a href="/Wallet" class="user-dropdown-item">Ví của tôi</a>
+                                     <a href="/Wallet/BuyVIP" class="user-dropdown-item">Mua VIP</a>
+                                     <a href="/Bill" class="user-dropdown-item">Hóa đơn của tôi</a>
+                                     <a href="/Favorite" class="user-dropdown-item">
+                                         <i class="fas fa-heart" style="color:#e74c3c;margin-right:5px;"></i>Yêu thích
+                                     </a>
+                                     <a href="/WatchHistory" class="user-dropdown-item">
+                                         <i class="fas fa-history" style="margin-right:5px;"></i>Lịch sử xem
+                                     </a>
+                                     <div class="user-dropdown-divider"></div>
+                                 }
+                                 <a href="/Auth/Logout" class="user-dropdown-item">Đăng xuất</a>
+                             </div>
+                         </div>
+                     }
+                     else
+                     {
+                         <!-- User is not logged in - show login/register buttons -->
+                         <div class="auth-buttons">
+                             <a href="/Auth/Login" class="auth-btn login-btn">
+                                 Đăng nhập
+                             </a>
+                             <a href="/Auth/Register" class="auth-btn register-btn">
+                                 Đăng ký
+                             </a>
+                         </div>
+                     }
+                </div>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="container">
+            @RenderBody()
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 - webxemphim</p>
+        <p style="background-color: #BA0000; color: gold; display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 6px; font-weight: bold;">
+            <img src="/images/index/flag-vietnam_1f1fb-1f1f3.png" alt="VN" style="width: 24px; height: 24px; object-fit: contain;" />
+            Hoàng Sa & Trường Sa là của Việt Nam!
+            <img src="/images/index/flag-vietnam_1f1fb-1f1f3.png" alt="VN" style="width: 24px; height: 24px; object-fit: contain;" />
+        </p>
+        <div class="footer-left">
+            <div class="Info">
+                <p>Chúng tôi rất hân hạnh giới thiệu đến bạn về đất nước mình. Việt Nam nằm ở phía đông bán đảo Đông Dương, thuộc khu vực Đông Nam Á, trải dài trên 15 vĩ độ. Đất nước có hình chữ S đặc trưng, tiếp giáp với Trung Quốc ở phía Bắc, Lào và Campuchia ở phía Tây, và Biển Đông ở phía Đông và Nam. Thủ đô là Hà Nội, trung tâm kinh tế lớn nhất là TP. Hồ Chí Minh.</p>
+                <p>Với đường bờ biển dài hơn 3.260 km, Việt Nam sở hữu vùng biển rộng lớn cùng khoảng 4.000 hòn đảo lớn nhỏ. Người Việt chúng tôi hay tự hào nói với nhau rằng: "Việt Nam có rừng vàng, biển bạc".</p>
+                <p>Khí hậu Việt Nam vô cùng đa dạng, chia thành hai vùng rõ rệt: miền Bắc chịu ảnh hưởng của khí hậu cận nhiệt đới ẩm với bốn mùa (xuân, hạ, thu, đông), trong khi miền Nam mang đặc trưng của khí hậu nhiệt đới gió mùa với hai mùa (mùa mưa và mùa khô). Từ những dãy núi hùng vĩ ở Sapa (nơi có đỉnh Fansipan 3.143m, được mệnh danh là nóc nhà Đông Dương) đến đồng bằng sông Cửu Long trù phú, mỗi vùng miền đều mang vẻ đẹp địa lý và sinh thái riêng biệt.</p>
+                <p>Đặc biệt, từ ngày 01/07/2025, Việt Nam đã thực hiện một cuộc cải cách hành chính lịch sử, sáp nhập từ 63 tỉnh thành xuống còn 34 đơn vị hành chính cấp tỉnh (bao gồm 6 thành phố trực thuộc trung ương và 28 tỉnh). Sự thay đổi này nhằm tối ưu hóa bộ máy quản lý nhà nước và thúc đẩy phát triển kinh tế vùng.</p>
+                <p>Về tài nguyên thiên nhiên, Việt Nam sở hữu nguồn dự trữ dồi dào về than đá, dầu khí, bauxite (trữ lượng hàng đầu thế giới tại Tây Nguyên) và đất hiếm. Tính đến năm 2026, đất nước chúng tôi vinh dự được UNESCO công nhận 9 Di sản Thế giới (bao gồm Vịnh Hạ Long - Quần đảo Cát Bà, Phố cổ Hội An, Quần thể danh thắng Tràng An...) cùng 17 Di sản Văn hóa Phi vật thể (như Nhã nhạc cung đình Huế, Không gian văn hóa Cồng chiêng Tây Nguyên).</p>
+            </div>
+            <div class="footer-right">
+                <img src="/images/index/viet-nam-34-tinh-thanh.png" alt="VN-Map" style="width: 100%; max-height: 400px; object-fit: contain;"/>
+                <p>Nguồn: Cục Đo đạc, Bản đồ và Thông tin địa lý Việt Nam •<a href="https://vnsdi.mae.gov.vn/bandohanhchinh/"> Xem bản đồ chi tiết</a></p>
+            </div>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <script>
+        // Handle search form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchForm = document.querySelector('.search-box form');
+            const searchInput = document.querySelector('.search-box input[name="query"]');
+            
+            // Submit form when Enter is pressed
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (this.value.trim()) {
+                        searchForm.submit();
+                    }
+                }
+            });
+            
+            // Submit form when search icon is clicked
+            const searchIcon = document.querySelector('.search-icon');
+            searchIcon.addEventListener('click', function() {
+                if (searchInput.value.trim()) {
+                    searchForm.submit();
+                }
+            });
+            
+            // Auto-focus search input when page loads
+            searchInput.focus();
+            
+            // Debug auth buttons
+            const authButtons = document.querySelector('.auth-buttons');
+            const loginBtn = document.querySelector('.login-btn');
+            const registerBtn = document.querySelector('.register-btn');
+            
+            console.log('Auth buttons found:', authButtons);
+            console.log('Login button found:', loginBtn);
+            console.log('Register button found:', registerBtn);
+
+        });
+    </script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

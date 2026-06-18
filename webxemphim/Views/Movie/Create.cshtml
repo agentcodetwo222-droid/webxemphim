@@ -1,0 +1,446 @@
+@model webxemphim.Models.Movie
+
+@{
+    ViewData["Title"] = "Thêm phim mới";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="mb-4" style="color: #ffd700; font-weight: bold; text-align: center;">
+                <i class="fas fa-film" style="margin-right: 10px;"></i>
+                Thêm phim mới
+            </h2>
+            
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <div class="card" style="background: #232533; border: 1px solid #333;">
+                <div class="card-body">
+
+                    
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label text-white">
+                                <i class="fas fa-heading" style="margin-right: 8px; color: #ffd700;"></i>
+                                Tên phim
+                            </label>
+                            <input asp-for="Title" class="form-control" placeholder="Nhập tên phim..." style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;" />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label text-white">
+                                <i class="fas fa-file-alt" style="margin-right: 8px; color: #ffd700;"></i>
+                                Mô tả
+                            </label>
+                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Nhập mô tả phim..." style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+                        
+                                                 <div class="row">
+                             <div class="col-md-6">
+                                 <div class="mb-3">
+                                     <label asp-for="Genre" class="form-label text-white">
+                                         <i class="fas fa-tags" style="margin-right: 8px; color: #ffd700;"></i>
+                                         Thể loại
+                                     </label>
+                                     <select asp-for="Genre" class="form-select" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;">
+                                         <option value="">Chọn thể loại</option>
+                                         <option value="Hành động">Hành động</option>
+                                         <option value="Phiêu lưu">Phiêu lưu</option>
+                                         <option value="Hài hước">Hài hước</option>
+                                         <option value="Kinh dị">Kinh dị</option>
+                                         <option value="Tình cảm">Tình cảm</option>
+                                         <option value="Viễn tưởng">Viễn tưởng</option>
+                                         <option value="Khoa học viễn tưởng">Khoa học viễn tưởng</option>
+                                         <option value="Thriller">Thriller</option>
+                                         <option value="Tội phạm">Tội phạm</option>
+                                         <option value="Chiến tranh">Chiến tranh</option>
+                                         <option value="Western">Western</option>
+                                         <option value="Hoạt hình">Hoạt hình</option>
+                                         <option value="Tài liệu">Tài liệu</option>
+                                         <option value="Gia đình">Gia đình</option>
+                                         <option value="Thể thao">Thể thao</option>
+                                         <option value="Âm nhạc">Âm nhạc</option>
+                                         <option value="Lịch sử">Lịch sử</option>
+                                         <option value="Chính trị">Chính trị</option>
+                                         <option value="Tôn giáo">Tôn giáo</option>
+                                         <option value="Khác">Khác</option>
+                                     </select>
+                                     <span asp-validation-for="Genre" class="text-danger"></span>
+                                 </div>
+                             </div>
+                             <div class="col-md-6">
+                                 <div class="mb-3">
+                                     <label asp-for="CategoryName" class="form-label text-white">
+                                         <i class="fas fa-folder" style="margin-right: 8px; color: #ffd700;"></i>
+                                         Danh mục
+                                     </label>
+                                     <select asp-for="CategoryName" class="form-select" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;">
+                                         <option value="">Chọn danh mục</option>
+                                         @foreach (var category in ViewBag.Categories ?? new List<Category>())
+                                         {
+                                             <option value="@category.Name">@category.Name</option>
+                                         }
+                                     </select>
+                                     <span asp-validation-for="CategoryName" class="text-danger"></span>
+                                 </div>
+                             </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Country" class="form-label text-white">
+                                        <i class="fas fa-globe" style="margin-right: 8px; color: #ffd700;"></i>
+                                        Quốc gia
+                                    </label>
+                                    <select asp-for="Country" class="form-select" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;">
+                                        <option value="">Chọn quốc gia</option>
+                                        <option value="Việt Nam">Việt Nam</option>
+                                        <option value="Mỹ">Mỹ</option>
+                                        <option value="Hàn Quốc">Hàn Quốc</option>
+                                        <option value="Nhật Bản">Nhật Bản</option>
+                                        <option value="Trung Quốc">Trung Quốc</option>
+                                        <option value="Thái Lan">Thái Lan</option>
+                                        <option value="Ấn Độ">Ấn Độ</option>
+                                        <option value="Anh">Anh</option>
+                                        <option value="Pháp">Pháp</option>
+                                        <option value="Đức">Đức</option>
+                                        <option value="Ý">Ý</option>
+                                        <option value="Tây Ban Nha">Tây Ban Nha</option>
+                                        <option value="Canada">Canada</option>
+                                        <option value="Úc">Úc</option>
+                                        <option value="Brazil">Brazil</option>
+                                        <option value="Mexico">Mexico</option>
+                                        <option value="Argentina">Argentina</option>
+                                        <option value="Nga">Nga</option>
+                                        <option value="Ukraine">Ukraine</option>
+                                        <option value="Ba Lan">Ba Lan</option>
+                                        <option value="Hà Lan">Hà Lan</option>
+                                        <option value="Bỉ">Bỉ</option>
+                                        <option value="Thụy Điển">Thụy Điển</option>
+                                        <option value="Na Uy">Na Uy</option>
+                                        <option value="Đan Mạch">Đan Mạch</option>
+                                        <option value="Phần Lan">Phần Lan</option>
+                                        <option value="Thụy Sĩ">Thụy Sĩ</option>
+                                        <option value="Áo">Áo</option>
+                                        <option value="Hungary">Hungary</option>
+                                        <option value="Cộng hòa Séc">Cộng hòa Séc</option>
+                                        <option value="Slovakia">Slovakia</option>
+                                        <option value="Slovenia">Slovenia</option>
+                                        <option value="Croatia">Croatia</option>
+                                        <option value="Serbia">Serbia</option>
+                                        <option value="Bosnia và Herzegovina">Bosnia và Herzegovina</option>
+                                        <option value="Montenegro">Montenegro</option>
+                                        <option value="Albania">Albania</option>
+                                        <option value="Bắc Macedonia">Bắc Macedonia</option>
+                                        <option value="Bulgaria">Bulgaria</option>
+                                        <option value="Romania">Romania</option>
+                                        <option value="Hy Lạp">Hy Lạp</option>
+                                        <option value="Thổ Nhĩ Kỳ">Thổ Nhĩ Kỳ</option>
+                                        <option value="Israel">Israel</option>
+                                        <option value="Lebanon">Lebanon</option>
+                                        <option value="Syria">Syria</option>
+                                        <option value="Jordan">Jordan</option>
+                                        <option value="Iraq">Iraq</option>
+                                        <option value="Iran">Iran</option>
+                                        <option value="Afghanistan">Afghanistan</option>
+                                        <option value="Pakistan">Pakistan</option>
+                                        <option value="Bangladesh">Bangladesh</option>
+                                        <option value="Sri Lanka">Sri Lanka</option>
+                                        <option value="Nepal">Nepal</option>
+                                        <option value="Bhutan">Bhutan</option>
+                                        <option value="Myanmar">Myanmar</option>
+                                        <option value="Lào">Lào</option>
+                                        <option value="Campuchia">Campuchia</option>
+                                        <option value="Malaysia">Malaysia</option>
+                                        <option value="Singapore">Singapore</option>
+                                        <option value="Indonesia">Indonesia</option>
+                                        <option value="Philippines">Philippines</option>
+                                        <option value="Brunei">Brunei</option>
+                                        <option value="Đông Timo">Đông Timo</option>
+                                        <option value="Papua New Guinea">Papua New Guinea</option>
+                                        <option value="Fiji">Fiji</option>
+                                        <option value="New Zealand">New Zealand</option>
+                                        <option value="Khác">Khác</option>
+                                    </select>
+                                    <span asp-validation-for="Country" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Year" class="form-label text-white">
+                                <i class="fas fa-calendar-alt" style="margin-right: 8px; color: #ffd700;"></i>
+                                Năm sản xuất
+                            </label>
+                            <select asp-for="Year" class="form-select" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;">
+                                <option value="">Chọn năm</option>
+                                @for (int year = DateTime.Now.Year; year >= 1900; year--)
+                                {
+                                    <option value="@year">@year</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Year" class="text-danger"></span>
+                        </div>
+                        
+                        <!-- Hình ảnh -->
+                        <div class="mb-3">
+                            <label class="form-label text-white">
+                                <i class="fas fa-image" style="margin-right: 8px; color: #ffd700;"></i>
+                                Hình ảnh phim
+                            </label>
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="imageType" id="imageUrl" value="url" checked style="accent-color: #ffd700;">
+                                    <label class="form-check-label text-white" for="imageUrl">
+                                        <i class="fas fa-link" style="margin-right: 8px; color: #ffd700;"></i>
+                                        Sử dụng URL
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="imageType" id="imageFile" value="file" style="accent-color: #ffd700;">
+                                    <label class="form-check-label text-white" for="imageFile">
+                                        <i class="fas fa-upload" style="margin-right: 8px; color: #ffd700;"></i>
+                                        Upload file từ máy tính
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="imageUrlSection">
+                                <input asp-for="ImageUrl" class="form-control" placeholder="Nhập URL hình ảnh" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;" />
+                                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                            </div>
+                            
+                            <div id="imageFileSection" style="display: none;">
+                                <input type="file" name="imageFile" class="form-control" accept=".jpg,.jpeg,.png,.gif" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;" />
+                                <small class="text-muted" style="color: #aaa;">Hỗ trợ: JPG, PNG, GIF (Tối đa 5MB)</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Video -->
+                        <div class="mb-3">
+                            <label class="form-label text-white">
+                                <i class="fas fa-video" style="margin-right: 8px; color: #ffd700;"></i>
+                                Video phim
+                            </label>
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="videoType" id="videoUrl" value="url" checked style="accent-color: #ffd700;">
+                                    <label class="form-check-label text-white" for="videoUrl">
+                                        <i class="fas fa-link" style="margin-right: 8px; color: #ffd700;"></i>
+                                        Sử dụng URL
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="videoType" id="videoFile" value="file" style="accent-color: #ffd700;">
+                                    <label class="form-check-label text-white" for="videoFile">
+                                        <i class="fas fa-upload" style="margin-right: 8px; color: #ffd700;"></i>
+                                        Upload file từ máy tính
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="videoUrlSection">
+                                <input asp-for="VideoUrl" class="form-control" placeholder="Nhập URL video" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;" />
+                                <span asp-validation-for="VideoUrl" class="text-danger"></span>
+                            </div>
+                            
+                            <div id="videoFileSection" style="display: none;">
+                                <input type="file" name="videoFile" class="form-control" accept=".mp4,.avi,.mov,.mkv,.wmv,.flv" style="background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px;" />
+                                <small class="text-muted" style="color: #aaa;">Hỗ trợ: MP4, AVI, MOV, MKV, WMV, FLV (Tối đa 500MB)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input asp-for="IsVipOnly" class="form-check-input" type="checkbox" style="accent-color: #ffd700;" />
+                                        <label asp-for="IsVipOnly" class="form-check-label text-white">
+                                            <i class="fas fa-crown" style="margin-right: 8px; color: #ffd700;"></i>
+                                            Chỉ dành cho User VIP
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input asp-for="IsAvailable" class="form-check-input" type="checkbox" checked style="accent-color: #ffd700;" />
+                                        <label asp-for="IsAvailable" class="form-check-label text-white">
+                                            <i class="fas fa-eye" style="margin-right: 8px; color: #ffd700;"></i>
+                                            Có sẵn để xem
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="/Movie" class="btn btn-secondary" style="background: #6c757d; border: 1px solid #6c757d; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; transition: all 0.3s;">
+                                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i>
+                                Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border: none; color: #fff; padding: 12px 30px; border-radius: 8px; font-weight: bold; font-size: 16px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);">
+                                <i class="fas fa-plus" style="margin-right: 8px;"></i>
+                                Thêm phim
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Xử lý chuyển đổi giữa URL và File upload cho hình ảnh
+        document.getElementById('imageUrl').addEventListener('change', function() {
+            document.getElementById('imageUrlSection').style.display = 'block';
+            document.getElementById('imageFileSection').style.display = 'none';
+        });
+        
+        document.getElementById('imageFile').addEventListener('change', function() {
+            document.getElementById('imageUrlSection').style.display = 'none';
+            document.getElementById('imageFileSection').style.display = 'block';
+        });
+        
+        // Xử lý chuyển đổi giữa URL và File upload cho video
+        document.getElementById('videoUrl').addEventListener('change', function() {
+            document.getElementById('videoUrlSection').style.display = 'block';
+            document.getElementById('videoFileSection').style.display = 'none';
+        });
+        
+        document.getElementById('videoFile').addEventListener('change', function() {
+            document.getElementById('videoUrlSection').style.display = 'none';
+            document.getElementById('videoFileSection').style.display = 'block';
+        });
+
+        // Thêm hiệu ứng hover cho nút
+        document.addEventListener('DOMContentLoaded', function() {
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const backBtn = document.querySelector('a[href="/Movie"]');
+            
+            // Hiệu ứng hover cho nút Thêm phim
+            submitBtn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 6px 20px rgba(0, 123, 255, 0.4)';
+            });
+            
+            submitBtn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 4px 15px rgba(0, 123, 255, 0.3)';
+            });
+            
+            // Hiệu ứng hover cho nút Quay lại
+            backBtn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 15px rgba(108, 117, 125, 0.3)';
+            });
+            
+            backBtn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+
+            // Thêm validation cho form
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                const title = document.querySelector('input[name="Title"]').value.trim();
+                const description = document.querySelector('textarea[name="Description"]').value.trim();
+                const genre = document.querySelector('select[name="Genre"]').value;
+                const country = document.querySelector('select[name="Country"]').value;
+                const year = document.querySelector('select[name="Year"]').value;
+                
+                let isValid = true;
+                let errorMessage = '';
+                
+                if (!title) {
+                    errorMessage += 'Vui lòng nhập tên phim.\n';
+                    isValid = false;
+                }
+                
+                if (!description) {
+                    errorMessage += 'Vui lòng nhập mô tả phim.\n';
+                    isValid = false;
+                }
+                
+                if (!genre) {
+                    errorMessage += 'Vui lòng chọn thể loại phim.\n';
+                    isValid = false;
+                }
+                
+                if (!country) {
+                    errorMessage += 'Vui lòng chọn quốc gia.\n';
+                    isValid = false;
+                }
+                
+                if (!year) {
+                    errorMessage += 'Vui lòng chọn năm sản xuất.\n';
+                    isValid = false;
+                }
+                
+                // Kiểm tra file upload
+                const imageType = document.querySelector('input[name="imageType"]:checked').value;
+                const videoType = document.querySelector('input[name="videoType"]:checked').value;
+                
+                if (imageType === 'file') {
+                    const imageFile = document.querySelector('input[name="imageFile"]');
+                    if (imageFile.files.length > 0) {
+                        const file = imageFile.files[0];
+                        const maxSize = 5 * 1024 * 1024; // 5MB
+                        if (file.size > maxSize) {
+                            errorMessage += 'Hình ảnh không được vượt quá 5MB.\n';
+                            isValid = false;
+                        }
+                        
+                        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+                        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                        if (!allowedExtensions.includes(fileExtension)) {
+                            errorMessage += 'Chỉ chấp nhận file hình ảnh: JPG, PNG, GIF.\n';
+                            isValid = false;
+                        }
+                    }
+                }
+                
+                if (videoType === 'file') {
+                    const videoFile = document.querySelector('input[name="videoFile"]');
+                    if (videoFile.files.length > 0) {
+                        const file = videoFile.files[0];
+                        const maxSize = 500 * 1024 * 1024; // 500MB
+                        if (file.size > maxSize) {
+                            errorMessage += 'Video không được vượt quá 500MB.\n';
+                            isValid = false;
+                        }
+                        
+                        const allowedExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv'];
+                        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                        if (!allowedExtensions.includes(fileExtension)) {
+                            errorMessage += 'Chỉ chấp nhận file video: MP4, AVI, MOV, MKV, WMV, FLV.\n';
+                            isValid = false;
+                        }
+                    }
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Lỗi validation:\n' + errorMessage);
+                    return false;
+                }
+                
+                // Disable submit button to prevent double submission
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Đang xử lý...';
+            });
+        });
+    </script>
+} 

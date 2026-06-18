@@ -1,0 +1,121 @@
+@model IEnumerable<webxemphim.Controllers.BillViewModel>
+
+@{
+    ViewData["Title"] = "Hóa đơn";
+    bool isAdmin = ViewBag.IsAdmin == true;
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <h2 class="mb-4" style="color:#ffd700;font-weight:bold;text-align:center;">
+                <i class="fas fa-file-invoice-dollar" style="margin-right:10px;"></i>
+                @(isAdmin ? "Quản lý hóa đơn" : "Hóa đơn của tôi")
+            </h2>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+
+            @if (isAdmin)
+            {
+                <div class="mb-3">
+                    <a href="/Bill/Create" class="btn btn-primary">
+                        <i class="fas fa-plus" style="margin-right:5px;"></i>Tạo hóa đơn mới
+                    </a>
+                </div>
+            }
+
+            <div class="card" style="background:#232533;border:1px solid #333;">
+                <div class="card-body">
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center text-white py-5">
+                            <i class="fas fa-file-invoice" style="font-size:3rem;color:#666;"></i>
+                            <h5 class="mt-3">Chưa có hóa đơn nào</h5>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead style="background:#1a1a1a;">
+                                    <tr>
+                                        <th style="color:#ffd700;">Mã HĐ</th>
+                                        @if (isAdmin) { <th style="color:#ffd700;">User</th> }
+                                        <th style="color:#ffd700;">Dịch vụ</th>
+                                        <th style="color:#ffd700;">Loại</th>
+                                        <th style="color:#ffd700;">Số tiền</th>
+                                        <th style="color:#ffd700;">Thành VNĐ</th>
+                                        <th style="color:#ffd700;">Số dư sau</th>
+                                        <th style="color:#ffd700;">Trạng thái</th>
+                                        <th style="color:#ffd700;">Ngày tạo</th>
+                                        <th style="color:#ffd700;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var b in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <code style="color:#ffd700;font-size:0.85em;">@b.BillCode</code>
+                                            </td>
+                                            @if (isAdmin)
+                                            {
+                                                <td>
+                                                    <div style="font-size:0.9em;">@b.UserName</div>
+                                                    <div style="font-size:0.75em;color:#aaa;">@b.UserEmail</div>
+                                                </td>
+                                            }
+                                            <td>@b.ServiceName</td>
+                                            <td>
+                                                <span class="badge @(b.Type == "Deposit" ? "bg-success" : "bg-warning text-dark")">
+                                                    @(b.Type == "Deposit" ? "Nạp tiền" : b.Type == "Purchase" ? "Mua VIP" : b.Type)
+                                                </span>
+                                            </td>
+                                            <td class="@(b.Amount >= 0 ? "text-success" : "text-danger")">
+                                                @(b.Amount >= 0 ? "+" : "")@b.Amount.ToString("N2") @b.CurrencyCode
+                                            </td>
+                                            <td class="@(b.AmountInVND >= 0 ? "text-success" : "text-danger")">
+                                                @(b.AmountInVND >= 0 ? "+" : "")@b.AmountInVND.ToString("N0") ₫
+                                            </td>
+                                            <td>@b.BalanceAfter.ToString("N0") ₫</td>
+                                            <td>
+                                                <span class="badge @(b.Status == "Completed" ? "bg-success" : b.Status == "Failed" ? "bg-danger" : "bg-warning")">
+                                                    @b.Status
+                                                </span>
+                                            </td>
+                                            <td style="font-size:0.85em;">@b.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                <a href="/Bill/Details/@b.BillId" class="btn btn-sm btn-outline-info me-1">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                @if (isAdmin)
+                                                {
+                                                    <a href="/Bill/Delete/@b.BillId" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a href="@(isAdmin ? "/User" : "/Wallet")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left" style="margin-right:5px;"></i>Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

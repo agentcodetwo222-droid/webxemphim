@@ -1,0 +1,506 @@
+﻿@{
+    if (ViewData != null)
+    {
+        ViewData["Title"] = "Trang Chủ";
+    }
+}
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #0a0a0a;
+        color: #fff;
+        overflow-x: hidden;
+    }
+
+    /* ===== HERO BANNER ===== */
+    .hero-banner {
+        position: relative;
+        width: 100%;
+        height: 500px;
+        background-image: url('/images/natra/natrah2.jpg');
+        background-size: cover;
+        background-position: center top;
+        overflow: hidden;
+    }
+
+    .hero-gradient-left {
+        position: absolute;
+        top: 0; left: 0;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(to right, rgba(10,10,10,0.95) 30%, transparent 100%);
+        z-index: 1;
+    }
+
+    .hero-gradient-bottom {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 120px;
+        background: linear-gradient(to top, #0a0a0a, transparent);
+        z-index: 1;
+    }
+
+    .hero-content {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        display: flex;
+        align-items: flex-end;
+        padding: 0 48px 32px;
+        box-sizing: border-box;
+        justify-content: space-between;
+    }
+
+    .hero-info {
+        max-width: 480px;
+    }
+
+    .hero-title {
+        font-size: 36px;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 4px;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 14px;
+        color: #aaa;
+        margin: 0 0 12px;
+    }
+
+    .hero-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    .badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,0.3);
+        color: #fff;
+        background: rgba(255,255,255,0.1);
+    }
+
+    .badge.fhd { background: #1a73e8; border-color: #1a73e8; }
+    .badge.age { background: transparent; border-color: #aaa; color: #aaa; }
+
+    .hero-genres {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .genre-dot {
+        font-size: 13px;
+        color: #ccc;
+    }
+
+    .genre-dot::before {
+        content: '· ';
+    }
+
+    .genre-dot:first-child::before {
+        content: '';
+    }
+
+    .hero-desc {
+        font-size: 13px;
+        color: #bbb;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .btn-play {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #f5a623;
+        border: none;
+        color: #fff;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .btn-play:hover { background: #e09510; }
+
+    .btn-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .btn-icon:hover { background: rgba(255,255,255,0.25); }
+
+    /* Thumbnail carousel bên phải */
+    .hero-thumbnails {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        padding-bottom: 4px;
+    }
+
+    .thumb-item {
+        width: 80px;
+        height: 52px;
+        border-radius: 6px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border 0.2s;
+        flex-shrink: 0;
+    }
+
+    .thumb-item:hover, .thumb-item.active {
+        border-color: #f5a623;
+    }
+
+    .thumb-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* ===== MOVIE SECTIONS ===== */
+    .page-body {
+        padding: 24px 48px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+    }
+
+    .section-more {
+        font-size: 13px;
+        color: #aaa;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .section-more:hover { color: #f5a623; }
+
+    .movies-row {
+        display: flex;
+        gap: 14px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scrollbar-width: thin;
+        scrollbar-color: #333 transparent;
+    }
+
+    .movies-row::-webkit-scrollbar { height: 4px; }
+    .movies-row::-webkit-scrollbar-track { background: transparent; }
+    .movies-row::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .movie-card {
+        flex-shrink: 0;
+        width: 160px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .movie-card:hover { transform: scale(1.04); }
+
+    .movie-card img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        border-radius: 8px;
+        display: block;
+    }
+
+    .movie-card-info {
+        padding: 8px 2px 0;
+    }
+
+    .movie-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #eee;
+        margin: 0 0 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .movie-card-meta {
+        font-size: 11px;
+        color: #888;
+    }
+
+    .movie-card-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 3px;
+        background: #1a73e8;
+        color: #fff;
+        margin-right: 4px;
+    }
+
+    .section-divider {
+        height: 1px;
+        background: rgba(255,255,255,0.06);
+        margin: 32px 0;
+    }
+
+    @@media (max-width: 768px) {
+        .hero-banner { height: 380px; }
+        .hero-content { padding: 0 20px 24px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 12px; }
+        .hero-thumbnails { display: none; }
+        .hero-title { font-size: 26px; }
+        .page-body { padding: 16px 16px; }
+        .movie-card { width: 130px; }
+        .movie-card img { height: 180px; }
+    }
+</style>
+
+<!-- HERO BANNER -->
+<div class="hero-banner">
+    <div class="hero-gradient-left"></div>
+    <div class="hero-gradient-bottom"></div>
+    <div class="hero-content">
+        <div class="hero-info">
+            <h1 class="hero-title">Na Tra: Ma Đồng Náo Hải</h1>
+            <p class="hero-subtitle">Ne Zha 2</p>
+            <div class="hero-badges">
+                <span class="badge fhd">FHD</span>
+                <span class="badge age">T13</span>
+                <span class="badge">2025</span>
+                <span class="badge">Tập 1</span>
+            </div>
+            <div class="hero-genres">
+                <span class="genre-dot">Hoạt hình</span>
+                <span class="genre-dot">Hành động</span>
+                <span class="genre-dot">Phiêu lưu</span>
+            </div>
+            <p class="hero-desc">
+                Sau kiếp nạn, mặc dù linh hồn của Na Tra và Ngao Bính được bảo toàn, nhưng thân thể của họ đã bị hủy hoại. Để có thể tái sinh, họ phải tìm kiếm một thân thể mới trong khi kẻ thù không ngừng truy đuổi...
+            </p>
+            <div class="hero-actions">
+                <a href="/Movie/Player/1" class="btn-play">▶</a>
+                <a href="#" class="btn-icon" title="Yêu thích">♡</a>
+                <a href="/Movie/Detail/1" class="btn-icon" title="Thông tin">ℹ</a>
+            </div>
+        </div>
+
+        <div class="hero-thumbnails">
+            <div class="thumb-item active">
+                <img src="/images/natra/natrah1.jpg" alt="Na Tra" />
+            </div>
+            <div class="thumb-item">
+                <img src="/images/hinh/avengers endgame.jpg" alt="Avengers" />
+            </div>
+            <div class="thumb-item">
+                <img src="/images/hinh/the batman.jpg" alt="The Batman" />
+            </div>
+            <div class="thumb-item">
+                <img src="/images/hinh/dune.jpg" alt="Dune" />
+            </div>
+            <div class="thumb-item">
+                <img src="/images/hinh/spider man no way home.jpg" alt="Spider-Man" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BODY -->
+<div class="page-body">
+
+    <!-- Phim Mới -->
+    <div class="section-header">
+        <h2 class="section-title">Phim Mới Cập Nhật</h2>
+        <a href="/Movie" class="section-more">Xem tất cả →</a>
+    </div>
+    <div class="movies-row">
+        <div class="movie-card">
+            <img src="/images/natra/natrah1.jpg" alt="Na Tra 2" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Na Tra: Ma Đồng Náo Hải</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2025</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/hinh/avengers endgame.jpg" alt="Avengers" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Avengers: Endgame</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2019</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/hinh/spider man no way home.jpg" alt="Spider-Man" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Spider-Man: No Way Home</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2021</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/hinh/black widow.jpg" alt="Black Widow" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Black Widow</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2021</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/hinh/the batman.jpg" alt="The Batman" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">The Batman</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2022</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/hinh/dune.jpg" alt="Dune" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Dune</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2021</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/hinh/no time to die.jpg" alt="No Time To Die" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">No Time to Die</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2021</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Phim Bộ -->
+    <div class="section-header">
+        <h2 class="section-title">Phim Bộ Đang Hot</h2>
+        <a href="/Movie/Series" class="section-more">Xem tất cả →</a>
+    </div>
+    <div class="movies-row">
+        <div class="movie-card">
+            <img src="/images/conan/anh-conan-ngau.jpg" alt="Conan" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Thám Tử Conan</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>1996</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/tazannhi/hqdefault.jpg" alt="Tazan Nhí" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Tazan Nhí</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2024</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/conan/images.webp" alt="One Piece" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">One Piece</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>1999</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/natra/natrah3.jpg" alt="Phim bộ" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Na Tra: Tập Đặc Biệt</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2025</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/hinh/avengers endgame.jpg" alt="Phim bộ" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Avengers Series</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2019</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Phim Hoạt Hình -->
+    <div class="section-header">
+        <h2 class="section-title">Phim Hoạt Hình</h2>
+        <a href="/Movie" class="section-more">Xem tất cả →</a>
+    </div>
+    <div class="movies-row">
+        <div class="movie-card">
+            <img src="/images/natra/natrah2.jpg" alt="Na Tra" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Na Tra 2</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2025</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/tazannhi/2 (1).webp" alt="Tazan" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Tazan Nhí S2</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2024</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/conan/anh-conan-ngau.jpg" alt="Conan" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Conan Movie</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2023</div>
+            </div>
+        </div>
+        <div class="movie-card">
+            <img src="/images/natra/natrah1.jpg" alt="Na Tra 1" />
+            <div class="movie-card-info">
+                <p class="movie-card-title">Na Tra: Sinh Ra Là Ma</p>
+                <div class="movie-card-meta"><span class="movie-card-badge">FHD</span>2019</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Thumbnail carousel click
+    document.querySelectorAll('.thumb-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+</script>

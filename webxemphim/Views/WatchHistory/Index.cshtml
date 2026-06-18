@@ -1,0 +1,142 @@
+@model IEnumerable<webxemphim.Controllers.WatchHistoryViewModel>
+
+@{
+    ViewData["Title"] = "Lịch sử xem phim";
+    bool isAdmin = ViewBag.IsAdmin == true;
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color:#ffd700;font-weight:bold;">
+            <i class="fas fa-history" style="margin-right:10px;"></i>
+            @(isAdmin ? "Quản lý lịch sử xem" : "Lịch sử xem phim")
+        </h2>
+
+        @if (!isAdmin && Model.Any())
+        {
+            <form asp-action="ClearAll" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Xóa toàn bộ lịch sử xem phim?')">
+                    <i class="fas fa-trash" style="margin-right:5px;"></i>Xóa tất cả
+                </button>
+            </form>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-film" style="font-size:3rem;color:#666;"></i>
+            <h5 class="text-white mt-3">Chưa có lịch sử xem phim</h5>
+            <a href="/Movie" class="btn btn-primary mt-2">Xem phim ngay</a>
+        </div>
+    }
+    else
+    {
+        <div class="card" style="background:#232533;border:1px solid #333;">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead style="background:#1a1a1a;">
+                            <tr>
+                                <th style="color:#ffd700;width:80px;"></th>
+                                <th style="color:#ffd700;">Tên phim</th>
+                                @if (isAdmin) { <th style="color:#ffd700;">User</th> }
+                                <th style="color:#ffd700;">Thời lượng xem</th>
+                                <th style="color:#ffd700;">Trạng thái</th>
+                                <th style="color:#ffd700;">Thời gian xem</th>
+                                <th style="color:#ffd700;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var w in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(w.MovieImage))
+                                        {
+                                            <img src="@w.MovieImage" alt="@w.MovieTitle"
+                                                 style="width:60px;height:40px;object-fit:cover;border-radius:4px;"
+                                                 onerror="this.src='/images/natra/natrah1.jpg'">
+                                        }
+                                        else
+                                        {
+                                            <div style="width:60px;height:40px;background:#333;border-radius:4px;
+                                                        display:flex;align-items:center;justify-content:center;">
+                                                <i class="fas fa-film" style="color:#666;font-size:1rem;"></i>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="/Movie/Detail/@w.MovieId" style="color:#fff;text-decoration:none;">
+                                            @w.MovieTitle
+                                        </a>
+                                    </td>
+                                    @if (isAdmin)
+                                    {
+                                        <td style="color:#aaa;font-size:0.9em;">@w.UserName</td>
+                                    }
+                                    <td>
+                                        @{
+                                            var mins = w.WatchDuration / 60;
+                                            var secs = w.WatchDuration % 60;
+                                        }
+                                        <span style="color:#aaa;">
+                                            @(mins > 0 ? $"{mins} phút " : "")@($"{secs} giây")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (w.IsCompleted)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check" style="margin-right:3px;"></i>Đã xem xong
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock" style="margin-right:3px;"></i>Đang xem
+                                            </span>
+                                        }
+                                    </td>
+                                    <td style="font-size:0.85em;color:#aaa;">
+                                        @w.WatchedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td>
+                                        <a href="/Movie/Player/@w.MovieId" class="btn btn-sm btn-success me-1">
+                                            <i class="fas fa-play"></i>
+                                        </a>
+                                        <form asp-action="Delete" method="post" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="watchHistoryId" value="@w.WatchHistoryId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Xóa mục này khỏi lịch sử?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="mt-3">
+        <a href="/Movie" class="btn btn-secondary">
+            <i class="fas fa-arrow-left" style="margin-right:5px;"></i>Về danh sách phim
+        </a>
+    </div>
+</div>

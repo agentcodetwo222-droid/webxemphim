@@ -1,0 +1,145 @@
+.hero-section {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    color: #fff;
+}
+
+    .hero-section .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(20, 20, 20, 0.7);
+        z-index: 1;
+    }
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 48px;
+    position: relative;
+    z-index: 2;
+}
+
+.logo img {
+    height: 40px;
+    margin-right: 12px;
+}
+
+.search-box input {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: none;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+}
+
+    .nav-menu .new {
+        color: #ffd700;
+        font-weight: bold;
+    }
+
+.actions button {
+    margin-left: 16px;
+    border-radius: 20px;
+    padding: 8px 20px;
+    border: none;
+    background: #fff;
+    color: #222;
+}
+
+.movie-info {
+    position: absolute;
+    top: 160px;
+    left: 60px;
+    z-index: 2;
+    max-width: 600px;
+}
+
+.movie-title {
+    font-size: 3rem;
+    font-weight: bold;
+    line-height: 1.1;
+}
+
+    .movie-title span {
+        display: block;
+        font-size: 2rem;
+        color: #ffd700;
+    }
+
+.movie-meta {
+    margin: 16px 0;
+    display: flex;
+    gap: 12px;
+}
+
+.badge {
+    background: #222;
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-size: 1rem;
+}
+
+    .badge.imdb {
+        background: #ffd700;
+        color: #222;
+    }
+
+.movie-tags span {
+    background: #333;
+    border-radius: 8px;
+    padding: 4px 10px;
+    margin-right: 8px;
+}
+
+.movie-desc {
+    margin: 16px 0;
+    font-size: 1.1rem;
+}
+
+.movie-actions button {
+    background: #ffd700;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    margin-right: 12px;
+    font-size: 1.5rem;
+    color: #222;
+}
+
+.carousel {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    display: flex;
+    gap: 12px;
+    z-index: 2;
+}
+
+    .carousel img {
+        width: 80px;
+        height: 50px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+    }
+
+        .carousel img.active {
+            border-color: #ffd700;
+        }
+
+.interest-section {
+    padding: 48px 60px;
+    background: #222;
+    color: #fff;
+}

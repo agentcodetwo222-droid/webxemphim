@@ -1,0 +1,101 @@
+@model IEnumerable<webxemphim.Controllers.FavoriteViewModel>
+
+@{
+    ViewData["Title"] = "Phim yêu thích";
+    bool isAdmin = ViewBag.IsAdmin == true;
+}
+
+<div class="container">
+    <h2 class="mb-4" style="color:#ffd700;font-weight:bold;text-align:center;">
+        <i class="fas fa-heart" style="margin-right:10px;color:#e74c3c;"></i>
+        @(isAdmin ? "Quản lý yêu thích" : "Phim yêu thích của tôi")
+    </h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-heart-broken" style="font-size:3rem;color:#666;"></i>
+            <h5 class="text-white mt-3">Chưa có phim yêu thích nào</h5>
+            <a href="/Movie" class="btn btn-primary mt-2">Khám phá phim ngay</a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var f in Model)
+            {
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="card h-100" style="background:#232533;border:1px solid #333;">
+                        <div class="position-relative">
+                            @if (!string.IsNullOrEmpty(f.MovieImage))
+                            {
+                                <img src="@f.MovieImage" class="card-img-top"
+                                     alt="@f.MovieTitle"
+                                     style="height:180px;object-fit:cover;"
+                                     onerror="this.src='/images/natra/natrah1.jpg'">
+                            }
+                            else
+                            {
+                                <div class="card-img-top d-flex align-items-center justify-content-center"
+                                     style="height:180px;background:#333;">
+                                    <i class="fas fa-film" style="font-size:2rem;color:#666;"></i>
+                                </div>
+                            }
+                            <div class="position-absolute top-0 end-0 m-2">
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-heart"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title text-white">@f.MovieTitle</h6>
+                            @if (isAdmin)
+                            {
+                                <p class="card-text" style="font-size:0.8em;color:#aaa;">
+                                    User: @f.UserName
+                                </p>
+                            }
+                            <p class="card-text" style="font-size:0.8em;color:#666;">
+                                <i class="fas fa-clock" style="margin-right:4px;"></i>
+                                @f.AddedAt.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                        </div>
+                        <div class="card-footer" style="background:#1a1a1a;border-top:1px solid #333;">
+                            <div class="d-flex justify-content-between">
+                                <a href="/Movie/Detail/@f.MovieId" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-info-circle"></i> Chi tiết
+                                </a>
+                                <a href="/Movie/Player/@f.MovieId" class="btn btn-sm btn-success">
+                                    <i class="fas fa-play"></i> Xem
+                                </a>
+                                <form asp-action="Remove" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="favoriteId" value="@f.FavoriteId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Xóa khỏi yêu thích?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="mt-3">
+        <a href="/Movie" class="btn btn-secondary">
+            <i class="fas fa-arrow-left" style="margin-right:5px;"></i>Về danh sách phim
+        </a>
+    </div>
+</div>

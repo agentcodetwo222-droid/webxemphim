@@ -1,0 +1,113 @@
+@model webxemphim.Controllers.BillViewModel
+
+@{
+    ViewData["Title"] = "Tạo hóa đơn";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="mb-4" style="color:#ffd700;font-weight:bold;text-align:center;">
+                <i class="fas fa-plus-circle" style="margin-right:10px;"></i>Tạo hóa đơn mới
+            </h2>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+
+            <div class="card" style="background:#232533;border:1px solid #333;">
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Mã hóa đơn</label>
+                                <input asp-for="BillCode" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;"
+                                       placeholder="BILL-20250101-001" />
+                                <span asp-validation-for="BillCode" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">User ID</label>
+                                <input asp-for="UserId" type="number" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Tên user</label>
+                                <input asp-for="UserName" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Email user</label>
+                                <input asp-for="UserEmail" type="email" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Mã giao dịch (TransactionId)</label>
+                                <input asp-for="TransactionId" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Loại</label>
+                                <select asp-for="Type" class="form-select" style="background:#1a1a1a;border:1px solid #333;color:#fff;">
+                                    <option value="Deposit">Nạp tiền</option>
+                                    <option value="Purchase">Mua VIP</option>
+                                    <option value="Refund">Hoàn tiền</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-white">Tên dịch vụ</label>
+                                <input asp-for="ServiceName" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;"
+                                       placeholder="Gói VIP 1 tháng" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-white">Số tiền gốc</label>
+                                <input asp-for="Amount" type="number" step="0.01" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-white">Mã tiền tệ</label>
+                                <input asp-for="CurrencyCode" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;"
+                                       value="VND" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-white">Thành VNĐ</label>
+                                <input asp-for="AmountInVND" type="number" step="1" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Số dư trước</label>
+                                <input asp-for="BalanceBefore" type="number" step="1" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Số dư sau</label>
+                                <input asp-for="BalanceAfter" type="number" step="1" class="form-control" style="background:#1a1a1a;border:1px solid #333;color:#fff;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Trạng thái</label>
+                                <select asp-for="Status" class="form-select" style="background:#1a1a1a;border:1px solid #333;color:#fff;">
+                                    <option value="Completed">Completed</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Failed">Failed</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-white">Ghi chú</label>
+                                <textarea asp-for="Note" class="form-control" rows="2"
+                                          style="background:#1a1a1a;border:1px solid #333;color:#fff;"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="/Bill" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left" style="margin-right:5px;"></i>Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save" style="margin-right:5px;"></i>Lưu hóa đơn
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

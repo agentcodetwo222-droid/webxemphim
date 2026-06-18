@@ -1,0 +1,47 @@
+@model IEnumerable<webxemphim.Models.User>
+
+@{
+    ViewData["Title"] = "Quản lý User";
+}
+
+<h1>Quản lý User</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Tạo User mới</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.UserName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EMAIL)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ROLE)
+            </th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.UserName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.EMAIL)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ROLE)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.UserId" class="btn btn-warning btn-sm">Sửa</a> |
+                <a asp-action="Details" asp-route-id="@item.UserId" class="btn btn-info btn-sm">Chi tiết</a> |
+                <a asp-action="Delete" asp-route-id="@item.UserId" class="btn btn-danger btn-sm">Xóa</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table> 

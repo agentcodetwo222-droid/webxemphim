@@ -1,0 +1,383 @@
+@{
+    ViewData["Title"] = "Thể loại";
+}
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+        color: #fff;
+        min-height: 100vh;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .page-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 40px;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .genres-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .genre-column {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .genre-item {
+        padding: 12px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        background: rgba(35, 37, 51, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .genre-item:hover {
+        background: rgba(35, 37, 51, 0.6);
+        transform: translateX(4px);
+    }
+
+    .genre-item.active {
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.8) 0%, rgba(45, 55, 72, 0.8) 100%);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+    }
+
+    .genre-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+
+    .genre-link {
+        font-size: 12px;
+        color: #ffd700;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .genre-link:hover {
+        color: #ffed4e;
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    }
+
+    .back-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.8) 0%, rgba(45, 55, 72, 0.8) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+
+    .back-btn:hover {
+        background: linear-gradient(135deg, rgba(45, 55, 72, 0.9) 0%, rgba(55, 65, 82, 0.9) 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        color: #ffd700;
+    }
+
+    /* Responsive Design */
+    @@media screen and (max-width: 1024px) {
+        .genres-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media screen and (max-width: 768px) {
+        .genres-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .genre-item {
+            padding: 10px 14px;
+        }
+    }
+
+    @@media screen and (max-width: 480px) {
+        .container {
+            padding: 20px 10px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+
+        .genres-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .genre-item {
+            padding: 12px 16px;
+        }
+
+        .genre-name {
+            font-size: 13px;
+        }
+
+        .genre-link {
+            font-size: 11px;
+        }
+    }
+</style>
+
+<a href="/" class="back-btn">← Quay lại</a>
+
+<div class="container">
+    <h1 class="page-title">Thể loại</h1>
+    
+    <div class="genres-grid">
+        <!-- Column 1 -->
+        <div class="genre-column">
+            <div class="genre-item">
+                <div class="genre-name">Anime</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Chuyển Thể</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Chương Trình Truyền Hình</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Cổ Trang</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Disney</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Giả Tưởng</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Hành Động</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Kinh Dị</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">LGBT+</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Marvel</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Nhạc Kịch</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Thiếu Nhi</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Tuổi Trẻ</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Tập Luyện</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Đau Thương</div>
+            </div>
+        </div>
+
+        <!-- Column 2 -->
+        <div class="genre-column">
+            <div class="genre-item">
+                <div class="genre-name">Bí Ẩn</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Chính Kịch</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Cung Đấu</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Cổ Tích</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Gay Cấn</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Hoàng Cung</div>
+                <a href="#" class="genre-link">Xem toàn bộ ></a>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Hình Sự</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Kinh Điển</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Live Action</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Miền Viễn Tây</div>
+                <a href="#" class="genre-link">Xem toàn bộ ></a>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Phiêu Lưu</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Thần Thoại</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Tài Liệu</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Viễn Tưởng</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Đời Thường</div>
+            </div>
+        </div>
+
+        <!-- Column 3 -->
+        <div class="genre-column">
+            <div class="genre-item">
+                <div class="genre-name">Chiến Tranh</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Chính Luận</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Cuối Tuần</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Cổ Điển</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Gia Đình</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Hoạt Hình</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Học Đường</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Kịch Nói</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Lãng Mạn</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Nghề Nghiệp</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Phép Thuật</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Thể Thao</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Tâm Lý</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Võ Thuật</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Ẩm Thực</div>
+            </div>
+        </div>
+
+        <!-- Column 4 -->
+        <div class="genre-column">
+            <div class="genre-item">
+                <div class="genre-name">Chiếu Rạp</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Chính Trị</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Cách Mạng</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">DC</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Lồng Tiếng Cực Mạnh</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Giáng Sinh</div>
+            </div>
+            <div class="genre-item active">
+                <div class="genre-name">Hài Bàn Bô</div>
+                <a href="#" class="genre-link">Xem toàn bộ ></a>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Khoa Học</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Kỳ Ảo</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Lịch Sử</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Lành Mạnh</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Người Mẫu</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Siêu Anh Hùng</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Truyền Hình Thực Tế</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Tình Cảm</div>
+            </div>
+            <div class="genre-item">
+                <div class="genre-name">Xuyên Không</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Genre item click events
+    document.querySelectorAll('.genre-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const name = this.querySelector('.genre-name').textContent;
+            console.log('Clicked genre:', name);
+            // Add your navigation logic here
+        });
+    });
+
+    // Genre link click events
+    document.querySelectorAll('.genre-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const name = this.parentElement.querySelector('.genre-name').textContent;
+            console.log('View all for genre:', name);
+            // Add your navigation logic here
+        });
+    });
+</script> 

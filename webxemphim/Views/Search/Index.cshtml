@@ -1,0 +1,669 @@
+@{
+    ViewData["Title"] = "Tìm kiếm phim";
+    var searchQuery = ViewData["SearchQuery"] as string ?? "";
+}
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+        color: #fff;
+        min-height: 100vh;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    .search-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Search Header */
+    .search-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 40px 0;
+    }
+
+    .search-title {
+        font-size: 48px;
+        font-weight: bold;
+        color: #fff;
+        margin: 0 0 20px 0;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        line-height: 1.2;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+
+    .search-subtitle {
+        font-size: 18px;
+        color: #bdbdbd;
+        margin: 0 0 30px 0;
+        line-height: 1.4;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+
+    /* Search Form */
+    .search-form {
+        max-width: 600px;
+        margin: 0 auto 40px;
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 20px 60px 20px 30px;
+        font-size: 18px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.8) 0%, rgba(45, 55, 72, 0.8) 100%);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        color: #fff;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #ffd700;
+        box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2);
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.9) 0%, rgba(45, 55, 72, 0.9) 100%);
+    }
+
+    .search-input::placeholder {
+        color: #bdbdbd;
+    }
+
+    .search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        border: none;
+        padding: 12px 20px;
+        border-radius: 50px;
+        color: #232533;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+    }
+
+    .search-btn:hover {
+        background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
+        transform: translateY(-50%) scale(1.05);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+    }
+
+    /* Search Results */
+    .search-results {
+        margin-top: 40px;
+    }
+
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.5) 0%, rgba(45, 55, 72, 0.5) 100%);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .results-count {
+        font-size: 18px;
+        color: #ffd700;
+        font-weight: 600;
+        line-height: 1.4;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+
+    .filter-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .filter-select {
+        background: linear-gradient(135deg, #232533 0%, #2d3748 100%);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-select:hover {
+        background: linear-gradient(135deg, #2d3748 0%, #374151 100%);
+        transform: translateY(-1px);
+    }
+
+    /* Movie Grid */
+    .movies-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    .movie-card {
+        background: linear-gradient(135deg, #232533 0%, #2d3748 100%);
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .movie-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+        border-color: rgba(255, 215, 0, 0.3);
+    }
+
+    .movie-poster {
+        width: 100%;
+        height: 400px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .movie-poster img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s;
+    }
+
+    .movie-card:hover .movie-poster img {
+        transform: scale(1.05);
+    }
+
+    .movie-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .movie-card:hover .movie-overlay {
+        opacity: 1;
+    }
+
+    .play-btn {
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        border: none;
+        padding: 16px 24px;
+        border-radius: 50px;
+        color: #232533;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+    }
+
+    .play-btn:hover {
+        background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+    }
+
+    .movie-info {
+        padding: 20px;
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .movie-title {
+        font-size: 18px;
+        font-weight: bold;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #fff;
+        margin: 0 0 8px 0;
+        line-height: 1.3;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+    .movie-subtitle {
+        font-size: 14px;
+        color: #ffd700;
+        margin-bottom: 4px;
+        font-weight: 500;
+        line-height: 1.2;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+    .movie-description {
+        font-size: 14px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #bdbdbd;
+        line-height: 1.4;
+        margin: 0;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+
+    /* No Results */
+    .no-results {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(135deg, rgba(35, 37, 51, 0.5) 0%, rgba(45, 55, 72, 0.5) 100%);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .no-results-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .no-results-title {
+        font-size: 24px;
+        color: #fff;
+        margin-bottom: 10px;
+    }
+
+    .no-results-text {
+        font-size: 16px;
+        color: #bdbdbd;
+        margin-bottom: 30px;
+    }
+
+    .suggestions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .suggestion-tag {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        white-space: nowrap;
+        display: inline-block;
+        line-height: 1.2;
+    }
+
+    .suggestion-tag:hover {
+        background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+        transform: translateY(-1px);
+    }
+
+    /* Loading */
+    .loading {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-top: 4px solid #ffd700;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @@media screen and (max-width: 768px) {
+        .search-title {
+            font-size: 36px;
+            line-height: 1.3;
+        }
+
+        .search-input {
+            padding: 16px 50px 16px 20px;
+            font-size: 16px;
+        }
+
+        .search-btn {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+
+        .movies-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .results-header {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .filter-controls {
+            justify-content: center;
+        }
+
+        .movie-title {
+            font-size: 16px;
+            line-height: 1.2;
+            height: 2.2em;
+        }
+
+        .movie-description {
+            font-size: 13px;
+            line-height: 1.3;
+            height: 2.4em;
+        }
+
+        .movie-info {
+            height: 100px;
+        }
+    }
+
+    @@media screen and (max-width: 480px) {
+        .movies-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .search-container {
+            padding: 10px;
+        }
+
+        .search-header {
+            padding: 20px 0;
+        }
+
+        .search-title {
+            font-size: 28px;
+            line-height: 1.4;
+        }
+
+        .search-subtitle {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .movie-title {
+            font-size: 15px;
+            line-height: 1.2;
+            height: 2.0em;
+        }
+
+        .movie-description {
+            font-size: 12px;
+            line-height: 1.3;
+            height: 2.2em;
+        }
+
+        .results-count {
+            font-size: 16px;
+            line-height: 1.3;
+        }
+
+        .suggestion-tag {
+            font-size: 13px;
+            padding: 6px 12px;
+        }
+
+        .movie-info {
+            height: 80px;
+        }
+    }
+    .search-tab {
+        background: #232533;
+        color: #fff;
+        border: none;
+        padding: 10px 28px;
+        border-radius: 24px 24px 0 0;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 4px;
+        transition: background 0.2s, color 0.2s;
+        outline: none;
+    }
+    .search-tab.active, .search-tab:focus {
+        background: #fff;
+        color: #232533;
+        box-shadow: 0 -2px 8px rgba(255,215,0,0.12);
+    }
+    .search-tab:not(.active):hover {
+        background: #2d3748;
+        color: #ffd700;
+    }
+    .movie-badges {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        display: flex;
+        gap: 6px;
+        z-index: 2;
+    }
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        background: #444;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 2px;
+    }
+    .badge-primary { background: #ff4c4c; }
+    .badge-blue { background: #007bff; }
+    .badge-green { background: #28a745; }
+    .badge-yellow { background: #ffd700; color: #232533; }
+    .movie-subtitle {
+        font-size: 14px;
+        color: #ffd700;
+        margin-bottom: 4px;
+        font-weight: 500;
+        line-height: 1.2;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    }
+</style>
+
+<div class="search-container">
+    <!-- Search Header -->
+    <div class="search-header">
+        <h1 class="search-title">🔍 Tìm kiếm phim</h1>
+        <p class="search-subtitle">Khám phá kho tàng phim khổng lồ của chúng tôi</p>
+    </div>
+
+    <!-- Search Form -->
+    <form class="search-form" method="post" action="/Search/Search">
+        <input type="text" 
+               class="search-input" 
+               name="query" 
+               value="@searchQuery"
+               placeholder="Tìm kiếm phim, diễn viên, thể loại..." 
+               autocomplete="off">
+        <button type="submit" class="search-btn">🔍</button>
+    </form>
+
+    <!-- Search Results -->
+    @if (!string.IsNullOrEmpty(searchQuery))
+    {
+        <div class="search-results">
+            <div class="results-header" style="flex-direction:column;align-items:flex-start;gap:10px;">
+                <div style="display:flex;align-items:center;width:100%;justify-content:space-between;">
+                    <div class="results-count" style="font-size:28px;font-weight:bold;color:#fff;">
+                        Kết quả tìm kiếm "<span style="color:#ffd700">@searchQuery</span>"
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:22px;cursor:pointer;" title="Bộ lọc"><i class="fa fa-filter"></i> <span style="font-size:16px;vertical-align:middle;">Bộ lọc</span></span>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:10px;">
+                    <button class="search-tab active" type="button">Phim</button>
+                    <button class="search-tab" type="button">Diễn viên</button>
+                </div>
+            </div>
+            <div class="filter-controls">
+                <select class="filter-select">
+                    <option>Tất cả</option>
+                    <option>Phim lẻ</option>
+                    <option>Phim bộ</option>
+                    <option>Hoạt hình</option>
+                </select>
+                <select class="filter-select">
+                    <option>Sắp xếp theo</option>
+                    <option>Mới nhất</option>
+                    <option>Đánh giá cao</option>
+                    <option>Xem nhiều</option>
+                </select>
+            </div>
+            <div class="movies-grid">
+                <div class="movie-card" onclick="window.location.href='/Movie/Detail'">
+                    <div class="movie-poster">
+                        <img src="/images/natra/natrah1.jpg" alt="Na Tra 2">
+                        <div class="movie-badges">
+                            <span class="badge badge-primary">P.Đề</span>
+                            <span class="badge badge-blue">L.Tiếng</span>
+                        </div>
+                        <div class="movie-overlay">
+                            <button class="play-btn">▶ Xem ngay</button>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-title">Na Tra 2: Ma Đồng Náo Hải</h3>
+                        <div class="movie-subtitle">Detective Conan Movie 27</div>
+                        <p class="movie-description">Sau kiếp nạn, mặc dù linh hồn của Na Tra và Ngao Bính được bảo toàn, nhưng thân thể của họ đã bị hủy hoại. Để có thể tái sinh, họ phải tìm kiếm một thân thể mới.</p>
+                    </div>
+                </div>
+                <div class="movie-card" onclick="window.location.href='/Movie/Detail'">
+                    <div class="movie-poster">
+                        <img src="/images/natra/natrah1.jpg" alt="Na Tra">
+                        <div class="movie-badges">
+                            <span class="badge badge-primary">P.Đề</span>
+                            <span class="badge badge-green">T.Minh</span>
+                        </div>
+                        <div class="movie-overlay">
+                            <button class="play-btn">▶ Xem ngay</button>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-title">Na Tra: Ma Đồng Náo Hải</h3>
+                        <div class="movie-subtitle">Detective Conan Movie 26</div>
+                        <p class="movie-description">Câu chuyện về Na Tra, một cậu bé có sức mạnh phi thường và hành trình khám phá bí mật về nguồn gốc của mình. Một cuộc phiêu lưu đầy thử thách.</p>
+                    </div>
+                </div>
+                <div class="movie-card" onclick="window.location.href='/Movie/Detail'">
+                    <div class="movie-poster">
+                        <img src="/images/natra/natrah1.jpg" alt="Ma Đồng">
+                        <div class="movie-badges">
+                            <span class="badge badge-primary">P.Đề</span>
+                        </div>
+                        <div class="movie-overlay">
+                            <button class="play-btn">▶ Xem ngay</button>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-title">Ma Đồng: Huyền Thoại</h3>
+                        <div class="movie-subtitle">Detective Conan: The Scarlet Bullet</div>
+                        <p class="movie-description">Khám phá thế giới huyền bí của Ma Đồng, nơi những sinh vật thần thoại và con người cùng tồn tại. Một câu chuyện đầy màu sắc và kỳ ảo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Popular Searches -->
+        <div class="search-results">
+            <div class="results-header">
+                <div class="results-count">Tìm kiếm phổ biến</div>
+            </div>
+            
+            <div class="no-results">
+                <div class="suggestions">
+                    <span class="suggestion-tag" onclick="searchFor('Na Tra')">Na Tra</span>
+                    <span class="suggestion-tag" onclick="searchFor('Ma Đồng')">Ma Đồng</span>
+                    <span class="suggestion-tag" onclick="searchFor('Hoạt hình')">Hoạt hình</span>
+                    <span class="suggestion-tag" onclick="searchFor('Viễn tưởng')">Viễn tưởng</span>
+                    <span class="suggestion-tag" onclick="searchFor('Hành động')">Hành động</span>
+                    <span class="suggestion-tag" onclick="searchFor('Tình cảm')">Tình cảm</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    // Auto-focus search input
+    document.querySelector('.search-input').focus();
+
+    // Search suggestion function
+    function searchFor(query) {
+        document.querySelector('.search-input').value = query;
+        document.querySelector('.search-form').submit();
+    }
+
+    // Real-time search (optional)
+    let searchTimeout;
+    document.querySelector('.search-input').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length >= 2) {
+            searchTimeout = setTimeout(() => {
+                // Here you could implement real-time search
+                console.log('Searching for:', query);
+            }, 500);
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelector('.search-input').blur();
+        }
+    });
+</script>

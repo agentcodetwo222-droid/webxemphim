@@ -1,0 +1,148 @@
+@model webxemphim.Models.User
+
+@{
+    ViewData["Title"] = "Ví của tôi";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Ví của tôi</h2>
+            
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+            
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <div class="row">
+                <!-- Thông tin tài khoản -->
+                <div class="col-md-6 mb-4">
+                    <div class="card" style="background: #232533; border: 1px solid #333;">
+                        <div class="card-body">
+                            <h5 class="card-title text-white">Thông tin tài khoản</h5>
+                            <div class="mb-3">
+                                <strong class="text-white">Tên:</strong> <span class="text-light">@Model.UserName</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong class="text-white">Email:</strong> <span class="text-light">@Model.EMAIL</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong class="text-white">Vai trò:</strong> 
+                                <span class="badge @(Model.ROLE == "Admin" ? "bg-danger" : Model.ROLE == "User VIP" ? "bg-warning" : "bg-primary")">
+                                    @Model.ROLE
+                                </span>
+                            </div>
+                            @if (Model.ROLE == "User VIP" && Model.VIPExpiryDate.HasValue)
+                            {
+                                <div class="mb-3">
+                                    <strong class="text-white">VIP hết hạn:</strong> 
+                                    <span class="text-light">@Model.VIPExpiryDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Số dư -->
+                <div class="col-md-6 mb-4">
+                    <div class="card" style="background: #232533; border: 1px solid #333;">
+                        <div class="card-body">
+                            <h5 class="card-title text-white">Số dư</h5>
+                            <div class="text-center">
+                                <h2 class="text-warning mb-3">@Model.Balance.ToString("N0") VNĐ</h2>
+                                <div class="d-grid gap-2">
+                                    <a href="/Wallet/Deposit" class="btn btn-success">Nạp tiền</a>
+                                    @if (Model.ROLE != "User VIP")
+                                    {
+                                        <a href="/Wallet/BuyVIP" class="btn btn-warning">Mua VIP</a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lịch sử giao dịch gần đây -->
+            <div class="card" style="background: #232533; border: 1px solid #333;">
+                <div class="card-body">
+                    <h5 class="card-title text-white">Lịch sử giao dịch gần đây</h5>
+                    
+                    @if ((ViewBag.Transactions as List<webxemphim.Models.Transaction>)?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-dark table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th>
+                                        <th>Loại</th>
+                                        <th>Mô tả</th>
+                                        <th>Số tiền gốc</th>
+                                        <th>Số tiền VNĐ</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var txList = ViewBag.Transactions as System.Collections.IEnumerable;
+                                    }
+                                    @if (txList != null)
+                                    @foreach (dynamic transaction in txList)
+                                    {
+                                        <tr>
+                                            <td>@transaction.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                <span class="badge @(transaction.Type == "Deposit" ? "bg-success" : "bg-warning")">
+                                                    @(transaction.Type == "Deposit" ? "Nạp tiền" : "Mua VIP")
+                                                </span>
+                                            </td>
+                                            <td>@transaction.Description</td>
+                                            <td class="@(transaction.Amount >= 0 ? "text-success" : "text-danger")">
+                                                @if (transaction.CurrencyCode != "VND")
+                                                {
+                                                    <span>@(transaction.Amount >= 0 ? "+" : "")@((decimal)transaction.Amount).ToString("N2") @transaction.CurrencyCode</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@(transaction.Amount >= 0 ? "+" : "")@((decimal)transaction.Amount).ToString("N0") VNĐ</span>
+                                                }
+                                            </td>
+                                            <td class="@(transaction.AmountInVND >= 0 ? "text-success" : "text-danger")">
+                                                @(transaction.AmountInVND >= 0 ? "+" : "")@((decimal)transaction.AmountInVND).ToString("N0") VNĐ
+                                            </td>
+                                            <td>
+                                                <span class="badge @(transaction.Status == "Completed" ? "bg-success" : transaction.Status == "Failed" ? "bg-danger" : "bg-warning")">
+                                                    @transaction.Status
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="/Wallet/History" class="btn btn-outline-primary">Xem tất cả lịch sử</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <h6 class="text-muted">Chưa có giao dịch nào</h6>
+                            <a href="/Wallet/Deposit" class="btn btn-primary">Nạp tiền ngay</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

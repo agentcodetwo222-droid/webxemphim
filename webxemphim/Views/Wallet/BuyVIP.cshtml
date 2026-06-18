@@ -1,0 +1,127 @@
+@{
+    ViewData["Title"] = "Mua VIP";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="mb-4">Mua gói VIP</h2>
+            
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <div class="row">
+                <!-- Gói VIP 1 tháng -->
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100" style="background: #232533; border: 1px solid #333;">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-white">Gói VIP 1 tháng</h5>
+                            <div class="mb-3">
+                                <h3 class="text-warning">50,000 VNĐ</h3>
+                                <small class="text-muted">30 ngày</small>
+                            </div>
+                            <ul class="list-unstyled text-light mb-4">
+                                <li>✓ Xem tất cả phim VIP</li>
+                                <li>✓ Không quảng cáo</li>
+                                <li>✓ Chất lượng cao</li>
+                            </ul>
+                            <form asp-action="BuyVIP" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="package" value="1month">
+                                <button type="submit" class="btn btn-warning btn-lg w-100">Mua ngay</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gói VIP 3 tháng -->
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100" style="background: #232533; border: 2px solid #ffd700;">
+                        <div class="card-body text-center">
+                            <div class="position-absolute top-0 start-50 translate-middle">
+                                <span class="badge bg-danger">PHỔ BIẾN</span>
+                            </div>
+                            <h5 class="card-title text-white">Gói VIP 3 tháng</h5>
+                            <div class="mb-3">
+                                <h3 class="text-warning">120,000 VNĐ</h3>
+                                <small class="text-muted">90 ngày</small>
+                                <br>
+                                <small class="text-success">Tiết kiệm 30,000 VNĐ</small>
+                            </div>
+                            <ul class="list-unstyled text-light mb-4">
+                                <li>✓ Xem tất cả phim VIP</li>
+                                <li>✓ Không quảng cáo</li>
+                                <li>✓ Chất lượng cao</li>
+                                <li>✓ Ưu tiên hỗ trợ</li>
+                            </ul>
+                            <form asp-action="BuyVIP" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="package" value="3months">
+                                <button type="submit" class="btn btn-warning btn-lg w-100">Mua ngay</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gói VIP 1 năm -->
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100" style="background: #232533; border: 1px solid #333;">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-white">Gói VIP 1 năm</h5>
+                            <div class="mb-3">
+                                <h3 class="text-warning">400,000 VNĐ</h3>
+                                <small class="text-muted">365 ngày</small>
+                                <br>
+                                <small class="text-success">Tiết kiệm 200,000 VNĐ</small>
+                            </div>
+                            <ul class="list-unstyled text-light mb-4">
+                                <li>✓ Xem tất cả phim VIP</li>
+                                <li>✓ Không quảng cáo</li>
+                                <li>✓ Chất lượng cao</li>
+                                <li>✓ Ưu tiên hỗ trợ</li>
+                                <li>✓ Nội dung độc quyền</li>
+                            </ul>
+                            <form asp-action="BuyVIP" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="package" value="1year">
+                                <button type="submit" class="btn btn-warning btn-lg w-100">Mua ngay</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4" style="background: #232533; border: 1px solid #333;">
+                <div class="card-body">
+                    <h6 class="card-title text-white">Lợi ích khi mua VIP:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="text-light">
+                                <li>✓ Xem tất cả phim VIP không giới hạn</li>
+                                <li>✓ Không có quảng cáo</li>
+                                <li>✓ Chất lượng video cao nhất</li>
+                                <li>✓ Tải xuống phim để xem offline</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="text-light">
+                                <li>✓ Ưu tiên hỗ trợ khách hàng</li>
+                                <li>✓ Nội dung độc quyền</li>
+                                <li>✓ Cập nhật phim mới sớm nhất</li>
+                                <li>✓ Gia hạn tự động (tùy chọn)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="/Wallet" class="btn btn-secondary">Quay lại ví</a>
+            </div>
+        </div>
+    </div>
+</div> 
