@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
@@ -49,20 +50,18 @@ namespace webxemphim.Infrastructure
         // ── Session ──────────────────────────────────────────────────────────
         private static void AddSecureSession(IServiceCollection services, IWebHostEnvironment env)
         {
-            // Production: cookie chỉ đi qua HTTPS, __Host- prefix
-            // Development: SameAsRequest cho phép HTTP localhost
-            bool isProd = !env.IsDevelopment();
-
             services.AddDistributedMemoryCache();
             services.AddSession(options =>
             {
                 options.IdleTimeout        = TimeSpan.FromMinutes(30);
-                options.Cookie.Name        = isProd ? "__Host-Session" : "Session";
+                // Không dùng __Host- prefix trên Railway vì app chạy sau reverse proxy HTTP
+                // __Host- yêu cầu kết nối HTTPS trực tiếp đến app, không hoạt động với proxy
+                options.Cookie.Name        = "App-Session";
                 options.Cookie.HttpOnly    = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.SecurePolicy = isProd
-                    ? CookieSecurePolicy.Always       // production: HTTPS only
-                    : CookieSecurePolicy.SameAsRequest; // development: theo request (HTTP ok)
+                options.Cookie.SecurePolicy = env.IsDevelopment()
+                    ? CookieSecurePolicy.SameAsRequest
+                    : CookieSecurePolicy.Always;
                 options.Cookie.SameSite    = SameSiteMode.Strict;
             });
         }
@@ -70,17 +69,16 @@ namespace webxemphim.Infrastructure
         // ── Antiforgery ───────────────────────────────────────────────────────
         private static void AddSecureAntiforgery(IServiceCollection services, IWebHostEnvironment env)
         {
-            bool isProd = !env.IsDevelopment();
-
             services.AddAntiforgery(options =>
             {
-                options.Cookie.Name        = isProd ? "__Host-AF" : "AF";
+                // Không dùng __Host- prefix — Railway proxy làm HTTP internally
+                options.Cookie.Name        = "App-AF";
                 options.Cookie.HttpOnly    = true;
-                options.Cookie.SecurePolicy = isProd
-                    ? CookieSecurePolicy.Always
-                    : CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SecurePolicy = env.IsDevelopment()
+                    ? CookieSecurePolicy.SameAsRequest
+                    : CookieSecurePolicy.Always;
                 options.Cookie.SameSite    = SameSiteMode.Strict;
-                options.HeaderName         = "X-CSRF-TOKEN"; // hỗ trợ AJAX
+                options.HeaderName         = "X-CSRF-TOKEN";
             });
         }
 
@@ -121,18 +119,19 @@ namespace webxemphim.Infrastructure
         /// </summary>
         public static WebApplication UseTransportSecurity(this WebApplication app)
         {
+            // Railway chạy app sau reverse proxy — cần đọc X-Forwarded-* headers
+            // để biết request thật là HTTPS dù app nhận HTTP internally
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-
-                // HSTS: Strict-Transport-Security
-                //   max-age = 31536000 (1 năm) — RFC 6797 yêu cầu tối thiểu 1 năm để preload
-                //   includeSubDomains — áp dụng cho tất cả subdomain
-                //   preload — đăng ký vào HSTS preload list của Chrome/Firefox/Edge
                 app.UseHsts();
             }
 
-            // Redirect HTTP → HTTPS (chỉ production, dev dùng HTTP localhost bình thường)
             if (!app.Environment.IsDevelopment())
             {
                 app.UseHttpsRedirection();
