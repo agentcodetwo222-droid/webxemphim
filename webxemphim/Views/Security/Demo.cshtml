@@ -1,303 +1,285 @@
-﻿@{
-    ViewData["Title"] = "Xem cĂ¡ch hoáº¡t Ä‘á»™ng SSTP";
+@{
+    ViewData["Title"] = "Xem cach hoat dong SSTP";
+    var role = Context.Session.GetString("UserRole");
+    if (role != "Admin")
+    {
+        Context.Response.Redirect("/");
+        return;
+    }
 }
 @Html.AntiForgeryToken()
 
 <style>
-.demo-page { max-width: 1100px; margin: 0 auto; padding: 32px 16px; }
+.demo-page  { max-width: 1100px; margin: 0 auto; padding: 32px 16px; }
 .demo-title { font-size: 1.8rem; font-weight: bold; color: #ffd700; margin-bottom: 6px; }
 .demo-sub   { color: #aaa; font-size: 0.9rem; margin-bottom: 28px; }
 .card       { background: #232533; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; border: 1px solid #333; }
 .card-title { font-weight: bold; color: #ffd700; margin-bottom: 14px; font-size: 1rem; border-bottom: 1px solid #333; padding-bottom: 8px; }
-.field-label{ color: #aaa; font-size: 0.78rem; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.flabel     { color: #aaa; font-size: 0.78rem; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 textarea, input[type=text] {
     width: 100%; background: #1a1b2a; border: 1px solid #444; color: #fff;
     border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; font-family: monospace;
     resize: vertical; outline: none; box-sizing: border-box;
 }
 textarea:focus, input[type=text]:focus { border-color: #ffd700; }
-.btn { padding: 9px 22px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
-.btn-gold  { background: #ffd700; color: #232533; }
+.btn        { padding: 9px 22px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+.btn-gold   { background: #ffd700; color: #232533; }
 .btn-gold:hover  { background: #ffed4e; }
-.btn-blue  { background: #2980b9; color: #fff; }
+.btn-blue   { background: #2980b9; color: #fff; }
 .btn-blue:hover  { background: #3498db; }
-.btn-green { background: #1a6b3a; color: #2ecc71; border: 1px solid #2ecc71; }
+.btn-green  { background: #1a6b3a; color: #2ecc71; border: 1px solid #2ecc71; }
 .btn-green:hover { background: #1e8449; }
-.btn-red   { background: #6b1a1a; color: #e74c3c; border: 1px solid #e74c3c; }
-.result-box { background: #1a1b2a; border: 1px solid #444; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.8rem; word-break: break-all; min-height: 40px; color: #7fdbff; }
-.hex-box    { color: #f39c12; }
-.ok-box     { border-color: #2ecc71; color: #2ecc71; }
-.fail-box   { border-color: #e74c3c; color: #e74c3c; }
-.grid-2     { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.grid-3     { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-@@media(max-width:768px) { .grid-2,.grid-3 { grid-template-columns: 1fr; } }
-.step-item  { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2b3a; align-items: flex-start; }
-.step-item:last-child { border-bottom: none; }
-.step-num   { background: #ffd700; color: #232533; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; flex-shrink: 0; margin-top: 2px; }
-.step-label { font-weight: bold; color: #fff; font-size: 0.9rem; }
-.step-value { font-family: monospace; font-size: 0.78rem; color: #7fdbff; word-break: break-all; margin: 4px 0; background: #1a1b2a; padding: 6px 8px; border-radius: 6px; }
+.btn-red    { background: #6b1a1a; color: #e74c3c; border: 1px solid #e74c3c; }
+.rbox       { background: #1a1b2a; border: 1px solid #444; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.8rem; word-break: break-all; min-height: 40px; color: #7fdbff; }
+.rbox-hex   { color: #f39c12; }
+.rbox-ok    { border-color: #2ecc71; color: #2ecc71; }
+.rbox-fail  { border-color: #e74c3c; color: #e74c3c; }
+.g3         { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@@media(max-width:768px) { .g3 { grid-template-columns: 1fr; } }
+.step-row   { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2b3a; }
+.step-row:last-child { border-bottom: none; }
+.step-num   { background: #ffd700; color: #232533; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; flex-shrink: 0; }
+.step-lbl   { font-weight: bold; color: #fff; font-size: 0.9rem; }
+.step-val   { font-family: monospace; font-size: 0.78rem; color: #7fdbff; word-break: break-all; margin: 4px 0; background: #1a1b2a; padding: 6px 8px; border-radius: 6px; }
 .step-note  { font-size: 0.75rem; color: #888; }
-.badge-ok   { background: #1a472a; color: #2ecc71; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
-.badge-fail { background: #4a0000; color: #e74c3c; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
+.bok        { background: #1a472a; color: #2ecc71; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
+.bfail      { background: #4a0000; color: #e74c3c; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
 .timing     { color: #666; font-size: 0.75rem; margin-top: 8px; }
-.spinner    { display: none; width: 16px; height: 16px; border: 2px solid #444; border-top-color: #ffd700; border-radius: 50%; animation: spin 0.6s linear infinite; margin-left: 8px; }
+.spinner    { display: none; width: 16px; height: 16px; border: 2px solid #444; border-top-color: #ffd700; border-radius: 50%; animation: spin 0.6s linear infinite; margin-left: 8px; vertical-align: middle; }
 @@keyframes spin { to { transform: rotate(360deg); } }
-.code-block { background: #0d1117; border: 1px solid #333; border-radius: 8px; padding: 14px 16px; font-family: monospace; font-size: 0.8rem; line-height: 1.7; overflow-x: auto; }
+.codeblock  { background: #0d1117; border: 1px solid #333; border-radius: 8px; padding: 14px 16px; font-family: monospace; font-size: 0.8rem; line-height: 1.7; overflow-x: auto; }
 .kw  { color: #ff7b72; }
 .fn  { color: #d2a8ff; }
 .cm  { color: #8b949e; }
-.str { color: #a5d6ff; }
 .num { color: #79c0ff; }
 </style>
 
 <div class="demo-page">
-    <div class="demo-title"><i class="fas fa-eye"></i> Xem cĂ¡ch hoáº¡t Ä‘á»™ng AES-256-GCM</div>
-    <div class="demo-sub">Demo real-time â€” mĂ£ hĂ³a/giáº£i mĂ£ trá»±c tiáº¿p báº±ng code thá»±c táº¿ cá»§a há»‡ thá»‘ng Â· Chá»‰ Admin</div>
 
-    {{!-- TAB 1: MĂ£ hĂ³a --}}
-    <div class="card">
-        <div class="card-title"><i class="fas fa-lock"></i> 1. MĂ£ hĂ³a plaintext â†’ Ciphertext (Real-time)</div>
-        <div class="field-label">Nháº­p dá»¯ liá»‡u cáº§n mĂ£ hĂ³a</div>
-        <textarea id="enc-input" rows="3" placeholder="VĂ­ dá»¥: dat135799a@gmail.com / 50000 / /videos/natra/natra2.mp4"></textarea>
-        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
-            <button class="btn btn-gold" onclick="doEncrypt()"><i class="fas fa-lock"></i> MĂ£ hĂ³a ngay</button>
-            <button class="btn btn-blue" onclick="fillSample()">DĂ¹ng dá»¯ liá»‡u máº«u</button>
-            <div class="spinner" id="enc-spinner"></div>
-        </div>
-        <div id="enc-result" style="margin-top:16px;display:none;">
-            <div class="grid-3" style="margin-bottom:12px;">
-                <div>
-                    <div class="field-label">Nonce (96-bit â€” ngáº«u nhiĂªn)</div>
-                    <div class="result-box hex-box" id="r-nonce"></div>
-                </div>
-                <div>
-                    <div class="field-label">Auth Tag (128-bit)</div>
-                    <div class="result-box hex-box" id="r-tag"></div>
-                </div>
-                <div>
-                    <div class="field-label">Thá»‘ng kĂª</div>
-                    <div class="result-box" id="r-stats"></div>
-                </div>
+<div class="demo-title"><i class="fas fa-eye"></i> Xem cach hoat dong AES-256-GCM</div>
+<div class="demo-sub">Demo real-time &mdash; ma hoa / giai ma truc tiep bang code thuc te &middot; Chi Admin</div>
+
+@* ── CARD 1: Ma hoa ────────────────────────────────────────────────────── *@
+<div class="card">
+    <div class="card-title"><i class="fas fa-lock"></i> 1. Ma hoa Plaintext &#8594; Ciphertext (Real-time)</div>
+    <div class="flabel">Nhap du lieu can ma hoa</div>
+    <textarea id="enc-input" rows="3" placeholder="Vi du: email@gmail.com / 50000 / /videos/natra.mp4"></textarea>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-gold" onclick="doEncrypt()"><i class="fas fa-lock"></i> Ma hoa ngay</button>
+        <button class="btn btn-blue" onclick="fillSample()">Dung du lieu mau</button>
+        <div class="spinner" id="enc-spin"></div>
+    </div>
+    <div id="enc-result" style="display:none;margin-top:16px;">
+        <div class="g3" style="margin-bottom:12px;">
+            <div>
+                <div class="flabel">Nonce (96-bit &#8212; ngau nhien)</div>
+                <div class="rbox rbox-hex" id="r-nonce"></div>
             </div>
-            <div class="field-label">Ciphertext (hex)</div>
-            <div class="result-box hex-box" id="r-cipher" style="margin-bottom:10px;"></div>
-            <div class="field-label">Output lÆ°u Database (Base64 â€” Nonce+Tag+Cipher)</div>
-            <div class="result-box" id="r-encrypted" style="margin-bottom:10px;word-break:break-all;"></div>
-            <button class="btn btn-green" onclick="copyToDecrypt()" style="margin-top:4px;">
-                <i class="fas fa-arrow-down"></i> Copy sang Ă´ Giáº£i mĂ£
-            </button>
-            <div class="timing" id="enc-timing"></div>
+            <div>
+                <div class="flabel">Auth Tag (128-bit)</div>
+                <div class="rbox rbox-hex" id="r-tag"></div>
+            </div>
+            <div>
+                <div class="flabel">Thong ke</div>
+                <div class="rbox" id="r-stats"></div>
+            </div>
         </div>
+        <div class="flabel">Ciphertext (HEX)</div>
+        <div class="rbox rbox-hex" id="r-cipher" style="margin-bottom:10px;"></div>
+        <div class="flabel">Output luu Database (Base64 = Nonce + Tag + Cipher)</div>
+        <div class="rbox" id="r-encrypted" style="margin-bottom:10px;"></div>
+        <button class="btn btn-green" onclick="copyToDecrypt()">
+            <i class="fas fa-arrow-down"></i> Copy sang o Giai ma
+        </button>
+        <div class="timing" id="enc-time"></div>
     </div>
+</div>
 
-    {{!-- TAB 2: Giáº£i mĂ£ --}}
-    <div class="card">
-        <div class="card-title"><i class="fas fa-unlock"></i> 2. Giáº£i mĂ£ Ciphertext â†’ Plaintext (Real-time)</div>
-        <div class="field-label">DĂ¡n chuá»—i Base64 tá»« Database</div>
-        <textarea id="dec-input" rows="3" placeholder="DĂ¡n chuá»—i Base64 Ä‘Ă£ mĂ£ hĂ³a vĂ o Ä‘Ă¢y..."></textarea>
-        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
-            <button class="btn btn-green" onclick="doDecrypt()"><i class="fas fa-unlock"></i> Giáº£i mĂ£ ngay</button>
-            <button class="btn btn-red" onclick="tamperAndDecrypt()"><i class="fas fa-bug"></i> Giáº£ láº­p táº¥n cĂ´ng (sá»­a 1 byte)</button>
-            <div class="spinner" id="dec-spinner"></div>
-        </div>
-        <div id="dec-result" style="margin-top:16px;display:none;">
-            <div class="field-label">Káº¿t quáº£ giáº£i mĂ£</div>
-            <div class="result-box" id="r-decrypted" style="margin-bottom:10px;font-size:1rem;"></div>
-            <div id="r-verify"></div>
-            <div class="timing" id="dec-timing"></div>
-        </div>
+@* ── CARD 2: Giai ma ────────────────────────────────────────────────────── *@
+<div class="card">
+    <div class="card-title"><i class="fas fa-unlock"></i> 2. Giai ma Ciphertext &#8594; Plaintext (Real-time)</div>
+    <div class="flabel">Dan chuoi Base64 tu Database</div>
+    <textarea id="dec-input" rows="3" placeholder="Dan chuoi Base64 da ma hoa vao day..."></textarea>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-green" onclick="doDecrypt()"><i class="fas fa-unlock"></i> Giai ma ngay</button>
+        <button class="btn btn-red" onclick="tamperTest()"><i class="fas fa-bug"></i> Gia lap tan cong (sua 1 byte)</button>
+        <div class="spinner" id="dec-spin"></div>
     </div>
-
-    {{!-- TAB 3: MĂ´ phá»ng toĂ n luá»“ng --}}
-    <div class="card">
-        <div class="card-title"><i class="fas fa-project-diagram"></i> 3. MĂ´ phá»ng toĂ n bá»™ luá»“ng mĂ£ hĂ³a tá»«ng bÆ°á»›c</div>
-        <div class="field-label">Dá»¯ liá»‡u Ä‘áº§u vĂ o</div>
-        <input type="text" id="sim-input" placeholder="VĂ­ dá»¥: 50000 (sá»‘ tiá»n náº¡p vĂ­)" value="50000" />
-        <div style="margin-top:10px;">
-            <button class="btn btn-gold" onclick="doSimulate()">
-                <i class="fas fa-play"></i> Cháº¡y mĂ´ phá»ng tá»«ng bÆ°á»›c
-            </button>
-            <div class="spinner" id="sim-spinner"></div>
-        </div>
-        <div id="sim-result" style="margin-top:16px;display:none;">
-            <div id="sim-steps"></div>
-            <div class="timing" id="sim-timing"></div>
-        </div>
+    <div id="dec-result" style="display:none;margin-top:16px;">
+        <div class="flabel">Ket qua giai ma</div>
+        <div class="rbox" id="r-decrypted" style="margin-bottom:10px;font-size:1rem;"></div>
+        <div id="r-verify"></div>
+        <div class="timing" id="dec-time"></div>
     </div>
+</div>
 
-    @* TAB 4 *@
-    <div class="card">
-        <div class="card-title"><i class="fas fa-code"></i> 4. Code mĂ£ hĂ³a thá»±c táº¿ (EncryptionService.cs)</div>
-        <div class="code-block">
-<span class="cm">/// AES-256-GCM â€” NIST SP 800-38D â€” dĂ¹ng trong TLS 1.3 / SSTP</span>
+@* ── CARD 3: Mo phong ────────────────────────────────────────────────────── *@
+<div class="card">
+    <div class="card-title"><i class="fas fa-project-diagram"></i> 3. Mo phong toan bo luong ma hoa tung buoc</div>
+    <div class="flabel">Du lieu dau vao</div>
+    <input type="text" id="sim-input" value="50000" placeholder="Vi du: 50000" />
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+        <button class="btn btn-gold" onclick="doSimulate()"><i class="fas fa-play"></i> Chay mo phong</button>
+        <div class="spinner" id="sim-spin"></div>
+    </div>
+    <div id="sim-result" style="display:none;margin-top:16px;">
+        <div id="sim-steps"></div>
+        <div class="timing" id="sim-time"></div>
+    </div>
+</div>
+
+@* ── CARD 4: Source code ─────────────────────────────────────────────────── *@
+<div class="card">
+    <div class="card-title"><i class="fas fa-code"></i> 4. Source code thuc te (EncryptionService.cs)</div>
+    <div class="codeblock">
+<span class="cm">// AES-256-GCM -- NIST SP 800-38D -- dung trong TLS 1.3 / SSTP</span>
 <span class="kw">public string</span> <span class="fn">Encrypt</span>(<span class="kw">string</span> plaintext)
 {
-    <span class="kw">var</span> plaintextBytes = Encoding.UTF8.<span class="fn">GetBytes</span>(plaintext);
-    <span class="kw">var</span> nonce          = <span class="kw">new byte</span>[<span class="num">12</span>];  <span class="cm">// 96-bit</span>
-    <span class="kw">var</span> tag            = <span class="kw">new byte</span>[<span class="num">16</span>];  <span class="cm">// 128-bit auth tag</span>
-    <span class="kw">var</span> ciphertext     = <span class="kw">new byte</span>[plaintextBytes.Length];
+    <span class="kw">var</span> plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
+    <span class="kw">var</span> nonce      = <span class="kw">new byte</span>[<span class="num">12</span>];  <span class="cm">// 96-bit nonce</span>
+    <span class="kw">var</span> tag        = <span class="kw">new byte</span>[<span class="num">16</span>];  <span class="cm">// 128-bit auth tag</span>
+    <span class="kw">var</span> ciphertext = <span class="kw">new byte</span>[plaintextBytes.Length];
 
-    <span class="cm">// Nonce ngáº«u nhiĂªn má»—i láº§n â€” tuyá»‡t Ä‘á»‘i khĂ´ng tĂ¡i dĂ¹ng</span>
-    RandomNumberGenerator.<span class="fn">Fill</span>(nonce);
+    <span class="cm">// Nonce ngau nhien moi lan -- khong tai dung voi AES-GCM</span>
+    RandomNumberGenerator.Fill(nonce);
 
-    <span class="kw">using var</span> aesGcm = <span class="kw">new</span> <span class="fn">AesGcm</span>(_key, <span class="num">16</span>);
-    aesGcm.<span class="fn">Encrypt</span>(nonce, plaintextBytes, ciphertext, tag);
+    <span class="kw">using var</span> aesGcm = <span class="kw">new</span> AesGcm(_key, <span class="num">16</span>);
+    aesGcm.Encrypt(nonce, plaintextBytes, ciphertext, tag);
 
-    <span class="cm">// ÄĂ³ng gĂ³i: nonce[12] + tag[16] + ciphertext â†’ Base64</span>
-    <span class="kw">var</span> combined = <span class="kw">new byte</span>[<span class="num">12</span> + <span class="num">16</span> + ciphertext.Length];
-    Buffer.<span class="fn">BlockCopy</span>(nonce,      <span class="num">0</span>, combined, <span class="num">0</span>,           <span class="num">12</span>);
-    Buffer.<span class="fn">BlockCopy</span>(tag,        <span class="num">0</span>, combined, <span class="num">12</span>,          <span class="num">16</span>);
-    Buffer.<span class="fn">BlockCopy</span>(ciphertext, <span class="num">0</span>, combined, <span class="num">12</span> + <span class="num">16</span>,     ciphertext.Length);
-    <span class="kw">return</span> Convert.<span class="fn">ToBase64String</span>(combined);
+    <span class="cm">// Dong goi: nonce[12] + tag[16] + ciphertext --> Base64</span>
+    <span class="kw">var</span> combined = <span class="kw">new byte</span>[<span class="num">28</span> + ciphertext.Length];
+    Buffer.BlockCopy(nonce,      <span class="num">0</span>, combined, <span class="num">0</span>,  <span class="num">12</span>);
+    Buffer.BlockCopy(tag,        <span class="num">0</span>, combined, <span class="num">12</span>, <span class="num">16</span>);
+    Buffer.BlockCopy(ciphertext, <span class="num">0</span>, combined, <span class="num">28</span>, ciphertext.Length);
+    <span class="kw">return</span> Convert.ToBase64String(combined);
 }
 
 <span class="kw">public string</span> <span class="fn">Decrypt</span>(<span class="kw">string</span> encryptedBase64)
 {
-    <span class="kw">var</span> combined   = Convert.<span class="fn">FromBase64String</span>(encryptedBase64);
-    <span class="kw">var</span> nonce      = combined[..<span class="num">12</span>];          <span class="cm">// tĂ¡ch Nonce</span>
-    <span class="kw">var</span> tag        = combined[<span class="num">12</span>..<span class="num">28</span>];        <span class="cm">// tĂ¡ch Tag</span>
-    <span class="kw">var</span> ciphertext = combined[<span class="num">28</span>..];          <span class="cm">// tĂ¡ch Ciphertext</span>
+    <span class="kw">var</span> combined   = Convert.FromBase64String(encryptedBase64);
+    <span class="kw">var</span> nonce      = combined[..<span class="num">12</span>];    <span class="cm">// tach Nonce</span>
+    <span class="kw">var</span> tag        = combined[<span class="num">12</span>..<span class="num">28</span>];  <span class="cm">// tach Auth Tag</span>
+    <span class="kw">var</span> ciphertext = combined[<span class="num">28</span>..];    <span class="cm">// tach Ciphertext</span>
     <span class="kw">var</span> plaintext  = <span class="kw">new byte</span>[ciphertext.Length];
 
-    <span class="kw">using var</span> aesGcm = <span class="kw">new</span> <span class="fn">AesGcm</span>(_key, <span class="num">16</span>);
-    <span class="cm">// Verify Tag trÆ°á»›c â€” náº¿u DB bá»‹ sá»­a â†’ throw ngay</span>
-    aesGcm.<span class="fn">Decrypt</span>(nonce, ciphertext, tag, plaintext);
-    <span class="kw">return</span> Encoding.UTF8.<span class="fn">GetString</span>(plaintext);
+    <span class="kw">using var</span> aesGcm = <span class="kw">new</span> AesGcm(_key, <span class="num">16</span>);
+    <span class="cm">// Verify Tag truoc -- neu DB bi sua thi throw ngay</span>
+    aesGcm.Decrypt(nonce, ciphertext, tag, plaintext);
+    <span class="kw">return</span> Encoding.UTF8.GetString(plaintext);
 }
-        </div>
     </div>
+</div>
 
-    <div style="text-align:right;margin-top:8px;">
-        <a href="/Security" style="color:#aaa;font-size:0.85rem;">â† Test SSTP Status</a>
-        &nbsp;|&nbsp;
-        <a href="/" style="color:#aaa;font-size:0.85rem;">â† Trang chá»§</a>
-    </div>
+<div style="text-align:right;margin-top:8px;">
+    <a href="/Security" style="color:#aaa;font-size:0.85rem;">&larr; Test SSTP Status</a>
+    &nbsp;|&nbsp;
+    <a href="/" style="color:#aaa;font-size:0.85rem;">&larr; Trang chu</a>
+</div>
+
 </div>
 
 @section Scripts {
 <script>
-const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-let lastEncrypted = '';
+const _tk = document.querySelector('input[name="__RequestVerificationToken"]').value;
+let _lastEnc = '';
 
-async function post(url, body) {
+async function callApi(url, body) {
     const r = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _tk },
         body: JSON.stringify(body)
     });
     return r.json();
 }
 
-function spin(id, on) {
-    document.getElementById(id).style.display = on ? 'inline-block' : 'none';
-}
+function spin(id, on) { document.getElementById(id).style.display = on ? 'inline-block' : 'none'; }
+function show(id)     { document.getElementById(id).style.display = 'block'; }
+function el(id)       { return document.getElementById(id); }
 
 function fillSample() {
-    const samples = [
-        'dat135799a@gmail.com',
-        '0987654321',
-        '/videos/natra/natra2.mp4',
-        '50000',
-        'HĂ  Ná»™i, Viá»‡t Nam'
-    ];
-    document.getElementById('enc-input').value = samples[Math.floor(Math.random() * samples.length)];
+    const s = ['email@gmail.com', '0987654321', '/videos/natra.mp4', '50000', 'Ha Noi'];
+    el('enc-input').value = s[Math.floor(Math.random() * s.length)];
 }
 
 async function doEncrypt() {
-    const plaintext = document.getElementById('enc-input').value.trim();
-    if (!plaintext) return alert('Vui lĂ²ng nháº­p dá»¯ liá»‡u!');
-    spin('enc-spinner', true);
-    const d = await post('/Security/Encrypt', { plaintext });
-    spin('enc-spinner', false);
+    const pt = el('enc-input').value.trim();
+    if (!pt) return alert('Vui long nhap du lieu!');
+    spin('enc-spin', true);
+    const d = await callApi('/Security/Encrypt', { plaintext: pt });
+    spin('enc-spin', false);
     if (d.error) return alert(d.error);
-
-    lastEncrypted = d.encrypted;
-    document.getElementById('r-nonce').textContent     = d.nonce_hex;
-    document.getElementById('r-tag').textContent       = d.tag_hex;
-    document.getElementById('r-stats').innerHTML       =
-        `Input: ${d.input_bytes}B<br>Output: ${d.output_bytes}B<br>+${d.output_bytes - d.input_bytes}B overhead`;
-    document.getElementById('r-cipher').textContent    = d.cipher_hex;
-    document.getElementById('r-encrypted').textContent = d.encrypted;
-    document.getElementById('enc-timing').textContent  = `â± MĂ£ hĂ³a trong ${d.elapsed_ms}ms lĂºc ${d.timestamp} UTC`;
-    document.getElementById('enc-result').style.display = 'block';
+    _lastEnc = d.encrypted;
+    el('r-nonce').textContent     = d.nonce_hex;
+    el('r-tag').textContent       = d.tag_hex;
+    el('r-stats').innerHTML       = 'Input: ' + d.input_bytes + 'B<br>Output: ' + d.output_bytes + 'B<br>+' + (d.output_bytes - d.input_bytes) + 'B overhead';
+    el('r-cipher').textContent    = d.cipher_hex;
+    el('r-encrypted').textContent = d.encrypted;
+    el('enc-time').textContent    = 'Ma hoa trong ' + d.elapsed_ms + 'ms luc ' + d.timestamp + ' UTC';
+    show('enc-result');
 }
 
 function copyToDecrypt() {
-    if (!lastEncrypted) return;
-    document.getElementById('dec-input').value = lastEncrypted;
-    document.getElementById('dec-result').style.display = 'none';
-    document.querySelector('.card:nth-child(3)').scrollIntoView({ behavior: 'smooth' });
+    if (!_lastEnc) return;
+    el('dec-input').value = _lastEnc;
+    el('dec-result').style.display = 'none';
 }
 
 async function doDecrypt() {
-    const ciphertext = document.getElementById('dec-input').value.trim();
-    if (!ciphertext) return alert('Vui lĂ²ng dĂ¡n chuá»—i Base64!');
-    spin('dec-spinner', true);
-    const d = await post('/Security/Decrypt', { ciphertext });
-    spin('dec-spinner', false);
-
-    const box = document.getElementById('r-decrypted');
-    const vfy = document.getElementById('r-verify');
-
+    const ct = el('dec-input').value.trim();
+    if (!ct) return alert('Vui long dan chuoi Base64!');
+    spin('dec-spin', true);
+    const d = await callApi('/Security/Decrypt', { ciphertext: ct });
+    spin('dec-spin', false);
+    const box = el('r-decrypted');
+    const vfy = el('r-verify');
     if (d.verified) {
         box.textContent = d.decrypted;
-        box.className   = 'result-box ok-box';
-        vfy.innerHTML   = '<span class="badge-ok">âœ… Auth Tag khá»›p â€” dá»¯ liá»‡u toĂ n váº¹n</span>';
+        box.className   = 'rbox rbox-ok';
+        vfy.innerHTML   = '<span class="bok">&#10003; Auth Tag khop - du lieu toan ven</span>';
     } else {
-        box.textContent = d.error || 'Giáº£i mĂ£ tháº¥t báº¡i';
-        box.className   = 'result-box fail-box';
-        vfy.innerHTML   = '<span class="badge-fail">âŒ Auth Tag KHĂ”NG khá»›p â€” dá»¯ liá»‡u Ä‘Ă£ bá»‹ sá»­a Ä‘á»•i!</span>';
+        box.textContent = d.error || 'Giai ma that bai';
+        box.className   = 'rbox rbox-fail';
+        vfy.innerHTML   = '<span class="bfail">&#10007; Auth Tag KHONG khop - du lieu da bi sua doi!</span>';
     }
-    document.getElementById('dec-timing').textContent  =
-        d.elapsed_ms ? `â± Giáº£i mĂ£ trong ${d.elapsed_ms}ms lĂºc ${d.timestamp} UTC` : '';
-    document.getElementById('dec-result').style.display = 'block';
+    el('dec-time').textContent = d.elapsed_ms ? 'Giai ma trong ' + d.elapsed_ms + 'ms luc ' + d.timestamp + ' UTC' : '';
+    show('dec-result');
 }
 
-async function tamperAndDecrypt() {
-    const ciphertext = document.getElementById('dec-input').value.trim();
-    if (!ciphertext) return alert('Cáº§n cĂ³ chuá»—i Base64 á»Ÿ Ă´ giáº£i mĂ£ trÆ°á»›c!');
-
-    // Sá»­a 1 kĂ½ tá»± á»Ÿ giá»¯a Ä‘á»ƒ mĂ´ phá»ng táº¥n cĂ´ng
-    const arr   = ciphertext.split('');
-    const mid   = Math.floor(arr.length / 2);
-    arr[mid]    = arr[mid] === 'A' ? 'B' : 'A';
-    const tampered = arr.join('');
-
-    document.getElementById('dec-input').value = tampered + ' â† (Ä‘Ă£ bá»‹ sá»­a 1 kĂ½ tá»±)';
-    spin('dec-spinner', true);
-    const d = await post('/Security/Decrypt', { ciphertext: tampered });
-    spin('dec-spinner', false);
-
-    const box = document.getElementById('r-decrypted');
-    const vfy = document.getElementById('r-verify');
-    box.textContent = d.error || 'Giáº£i mĂ£ tháº¥t báº¡i â€” Auth Tag khĂ´ng khá»›p';
-    box.className   = 'result-box fail-box';
-    vfy.innerHTML   = '<span class="badge-fail">âŒ Táº¥n cĂ´ng phĂ¡t hiá»‡n! AES-GCM tá»« chá»‘i giáº£i mĂ£ dá»¯ liá»‡u bá»‹ sá»­a Ä‘á»•i.</span>';
-    document.getElementById('dec-result').style.display = 'block';
+async function tamperTest() {
+    const ct = el('dec-input').value.trim();
+    if (!ct) return alert('Can co chuoi Base64 o o giai ma truoc!');
+    const a   = ct.split('');
+    const mid = Math.floor(a.length / 2);
+    a[mid]    = a[mid] === 'A' ? 'B' : 'A';
+    el('dec-input').value = a.join('');
+    spin('dec-spin', true);
+    await callApi('/Security/Decrypt', { ciphertext: a.join('') });
+    spin('dec-spin', false);
+    el('r-decrypted').textContent = 'Tan cong phat hien! AES-GCM tu choi giai ma du lieu bi sua doi.';
+    el('r-decrypted').className   = 'rbox rbox-fail';
+    el('r-verify').innerHTML      = '<span class="bfail">&#10007; Auth Tag KHONG khop - he thong bao ve thanh cong!</span>';
+    show('dec-result');
 }
 
 async function doSimulate() {
-    const plaintext = document.getElementById('sim-input').value.trim();
-    if (!plaintext) return alert('Vui lĂ²ng nháº­p dá»¯ liá»‡u!');
-    spin('sim-spinner', true);
-    const d = await post('/Security/SimulateToken', { plaintext });
-    spin('sim-spinner', false);
-
+    const pt = el('sim-input').value.trim();
+    if (!pt) return alert('Vui long nhap du lieu!');
+    spin('sim-spin', true);
+    const d = await callApi('/Security/SimulateToken', { plaintext: pt });
+    spin('sim-spin', false);
     let html = '';
     for (const s of d.steps) {
-        html += `<div class="step-item">
-            <div class="step-num">${s.step}</div>
-            <div style="flex:1">
-                <div class="step-label">${s.label}</div>
-                <div class="step-value">${s.value}</div>
-                <div class="step-note">${s.note}</div>
-            </div>
-        </div>`;
+        html += '<div class="step-row">'
+             +  '<div class="step-num">' + s.step + '</div>'
+             +  '<div style="flex:1">'
+             +  '<div class="step-lbl">' + s.label + '</div>'
+             +  '<div class="step-val">'  + s.value + '</div>'
+             +  '<div class="step-note">' + s.note  + '</div>'
+             +  '</div></div>';
     }
-    document.getElementById('sim-steps').innerHTML = html;
-    document.getElementById('sim-timing').textContent = `â± HoĂ n thĂ nh lĂºc ${d.timestamp} UTC`;
-    document.getElementById('sim-result').style.display = 'block';
+    el('sim-steps').innerHTML      = html;
+    el('sim-time').textContent     = 'Hoan thanh luc ' + d.timestamp + ' UTC';
+    show('sim-result');
 }
 </script>
 }
-
