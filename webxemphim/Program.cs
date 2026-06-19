@@ -21,6 +21,12 @@ builder.Services.AddSingleton<EncryptionService>();
 // ── SECURITY: Real-time Security Log (Singleton in-memory) ────────────────
 builder.Services.AddSingleton<webxemphim.Services.SecurityLogService>();
 
+// ── SECURITY: User Service (ma hoa Email/Balance) ─────────────────────────
+builder.Services.AddScoped<webxemphim.Services.UserService>();
+
+// ── SECURITY: Audit Log ben vung (luu DB) ─────────────────────────────────
+builder.Services.AddSingleton<webxemphim.Services.AuditLogService>();
+
 // ── Database ───────────────────────────────────────────────────────────────
 // Railway inject DATABASE_URL dạng: postgresql://user:pass@host:port/dbname
 // Ưu tiên: DATABASE_URL (Railway) → DefaultConnection (local user-secrets)
@@ -53,6 +59,39 @@ app.UseRateLimiter();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
+
+// ── Task 8: SecurityStamp middleware — invalidate session khi doi password/bi khoa ──
+app.Use(async (context, next) =>
+{
+    var userId = context.Session.GetString("UserId");
+    var stamp  = context.Session.GetString("SecurityStamp");
+    if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(stamp))
+    {
+        // Chi kiem tra moi 60 giay de giam load DB
+        var lastCheck = context.Session.GetString("StampChecked");
+        var now       = DateTime.UtcNow;
+        if (string.IsNullOrEmpty(lastCheck) ||
+            (now - DateTime.Parse(lastCheck)).TotalSeconds > 60)
+        {
+            using var scope = context.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<webxemphim.Models.ApplicationDbContext>();
+            if (int.TryParse(userId, out var uid))
+            {
+                var user = await db.Users.FindAsync(uid);
+                if (user != null &&
+                    (user.SecurityStamp.ToString() != stamp || user.IsLocked))
+                {
+                    context.Session.Clear();
+                    context.Response.Redirect("/Auth/Login");
+                    return;
+                }
+            }
+            context.Session.SetString("StampChecked", now.ToString("o"));
+        }
+    }
+    await next();
+});
+
 app.UseAuthorization();
 
 app.MapControllerRoute(

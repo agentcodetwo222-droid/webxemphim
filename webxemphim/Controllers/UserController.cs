@@ -12,18 +12,25 @@ namespace webxemphim.Controllers
         private readonly ILogger<UserController> _logger;
         private readonly EncryptionService       _enc;
         private readonly SecurityLogService      _secLog;
+        private readonly AuditLogService         _audit;
+        private readonly UserService             _userSvc;
 
         public UserController(ApplicationDbContext context, ILogger<UserController> logger,
-                              EncryptionService enc, SecurityLogService secLog)
+                              EncryptionService enc, SecurityLogService secLog,
+                              AuditLogService audit, UserService userSvc)
         {
             _context = context;
             _logger  = logger;
             _enc     = enc;
             _secLog  = secLog;
+            _audit   = audit;
+            _userSvc = userSvc;
         }
 
-        // ── SECURITY: helper kiểm tra Admin tập trung
         private bool IsAdmin() => HttpContext.Session.GetString("UserRole") == "Admin";
+        private int  AdminId() => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : 0;
+        private string AdminName() => HttpContext.Session.GetString("UserName") ?? "Admin";
+        private string GetIp() => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         public async Task<IActionResult> Index()
         {
@@ -143,27 +150,29 @@ namespace webxemphim.Controllers
                     if (existing == null) return NotFound();
 
                     existing.UserName = user.UserName;
-                    existing.EMAIL    = user.EMAIL.Trim().ToLowerInvariant();
+                    existing.EMAIL    = _enc.Encrypt(user.EMAIL.Trim().ToLowerInvariant());
                     existing.ROLE     = user.ROLE;
-                    // ── SECURITY: mã hóa lại Phone/Address nếu admin nhập mới
                     if (user.Phone   != null) existing.Phone   = string.IsNullOrWhiteSpace(user.Phone)   ? null : _enc.Encrypt(user.Phone.Trim());
                     if (user.Address != null) existing.Address = string.IsNullOrWhiteSpace(user.Address) ? null : _enc.Encrypt(user.Address.Trim());
 
-                    // ── SECURITY: chỉ hash lại nếu admin nhập mật khẩu mới
+                    // ── Task 8: Tang SecurityStamp khi doi mat khau hoac doi role ──
+                    bool stampChanged = false;
                     if (!string.IsNullOrWhiteSpace(user.MK))
                     {
-                        if (user.MK.Length < 8)
+                        var pwErr = UserService.ValidatePassword(user.MK);
+                        if (pwErr != null)
                         {
-                            ModelState.AddModelError("MK", "Mật khẩu phải có ít nhất 8 ký tự!");
+                            ModelState.AddModelError("MK", pwErr);
                             return View(user);
                         }
                         existing.MK = BCrypt.Net.BCrypt.HashPassword(user.MK, workFactor: 12);
+                        stampChanged = true;
                     }
-                    // nếu bỏ trống → giữ nguyên mật khẩu cũ
+                    if (existing.ROLE != user.ROLE) stampChanged = true;
+                    if (stampChanged) existing.SecurityStamp++;
 
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation("SECURITY: Admin cập nhật user. UserId={Id}", id);
-                    _secLog.LogEncrypt("User.Edit (Admin)", $"UserId={id}", "Phone/Address re-encrypted", 0);
+                    _logger.LogInformation("SECURITY: Admin cap nhat user. UserId={Id}", id);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -206,11 +215,46 @@ namespace webxemphim.Controllers
             {
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("SECURITY: Admin xóa user. UserId={Id}", id);
-                _secLog.LogLogin($"DELETE UserId={id}", "Admin-Action",
-                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "admin", false);
+                _logger.LogInformation("SECURITY: Admin xoa user. UserId={Id}", id);
+                _audit.LogAdminLockUser(AdminId(), AdminName(), id, GetIp());
             }
 
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── Task 8: Admin khoa / mo khoa tai khoan ───────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleLock(int id)
+        {
+            if (!IsAdmin())
+            {
+                TempData["ErrorMessage"] = "Ban khong co quyen!";
+                return RedirectToAction("Index", "Home");
+            }
+
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            // Khong cho khoa chinh minh
+            if (id == AdminId())
+            {
+                TempData["ErrorMessage"] = "Khong the khoa chinh tai khoan cua minh!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            user.IsLocked = !user.IsLocked;
+            // Tang SecurityStamp → session cu se bi invalidate ngay
+            user.SecurityStamp++;
+            await _context.SaveChangesAsync();
+
+            _audit.LogAdminLockUser(AdminId(), AdminName(), id, GetIp());
+            _secLog.LogLogin($"TOGGLE_LOCK UserId={id} IsLocked={user.IsLocked}",
+                "Admin-Action", GetIp(), false);
+
+            TempData["SuccessMessage"] = user.IsLocked
+                ? $"Da khoa tai khoan #{id}"
+                : $"Da mo khoa tai khoan #{id}";
             return RedirectToAction(nameof(Index));
         }
 

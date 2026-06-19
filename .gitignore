@@ -18,6 +18,10 @@ appsettings.Production.json
 publish/
 **/publish/
 
+## ── Media files (quá lớn cho GitHub 100MB limit) ────────────────────────
+webxemphim/wwwroot/videos/
+webxemphim/wwwroot/uploads/
+
 ## ── Log files ────────────────────────────────────────────────────────────
 *.log
 logs/

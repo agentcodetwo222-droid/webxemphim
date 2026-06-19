@@ -17,6 +17,8 @@ namespace webxemphim.Models
         public DbSet<Bill> Bills { get; set; }
         public DbSet<WatchHistory> WatchHistories { get; set; }
         public DbSet<Favorite> Favorites { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<LoginAttempt> LoginAttempts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -70,6 +72,21 @@ namespace webxemphim.Models
             {
                 e.HasKey(x => x.FavoriteId);
                 e.ToTable("Favorites");
+            });
+
+            modelBuilder.Entity<AuditLog>(e =>
+            {
+                e.HasKey(x => x.AuditLogId);
+                e.ToTable("AuditLogs");
+                e.HasIndex(x => x.Timestamp);
+                e.HasIndex(x => x.Category);
+            });
+
+            modelBuilder.Entity<LoginAttempt>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("LoginAttempts");
+                e.HasIndex(x => x.ClientKey).IsUnique();
             });
         }
     }

@@ -55,6 +55,20 @@ namespace webxemphim.Controllers
             var userRole = HttpContext.Session.GetString("UserRole");
             var userId   = HttpContext.Session.GetString("UserId");
 
+            // ── Task 5: Tu dong thu hoi VIP het han ──────────────────────
+            if (!string.IsNullOrEmpty(userId) && int.TryParse(userId, out var uid5))
+            {
+                var dbUser = await _context.Users.FindAsync(uid5);
+                if (dbUser is { ROLE: "User VIP", VIPExpiryDate: not null }
+                    && dbUser.VIPExpiryDate.Value < DateTime.UtcNow)
+                {
+                    dbUser.ROLE = "User";
+                    await _context.SaveChangesAsync();
+                    HttpContext.Session.SetString("UserRole", "User");
+                    userRole = "User";
+                }
+            }
+
             // ── SECURITY: kiểm tra VIP đúng — chặn cả user chưa đăng nhập
             if (movie.IsVipOnly)
             {

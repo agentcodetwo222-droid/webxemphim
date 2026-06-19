@@ -10,12 +10,22 @@ namespace webxemphim.Controllers
         private readonly ApplicationDbContext _context;
         private readonly EncryptionService    _enc;
         private readonly SecurityLogService   _secLog;
+        private readonly AuditLogService      _audit;
+        private readonly UserService          _userSvc;
 
-        public WalletController(ApplicationDbContext context, EncryptionService enc, SecurityLogService secLog)
+        // ── Task 3: Gioi han so tien nap ─────────────────────────────────
+        private const decimal MaxDepositVND = 100_000_000m; // 100 trieu VND / lan nap
+        private const decimal MaxBalanceVND = 500_000_000m; // 500 trieu tong so du
+
+        public WalletController(ApplicationDbContext context, EncryptionService enc,
+                                SecurityLogService secLog, AuditLogService audit,
+                                UserService userSvc)
         {
             _context = context;
             _enc     = enc;
             _secLog  = secLog;
+            _audit   = audit;
+            _userSvc = userSvc;
         }
 
         public async Task<IActionResult> Index()
@@ -23,24 +33,45 @@ namespace webxemphim.Controllers
             var userId = HttpContext.Session.GetString("UserId");
             if (string.IsNullOrEmpty(userId))
             {
-                TempData["ErrorMessage"] = "Vui lòng đăng nhập để truy cập!";
+                TempData["ErrorMessage"] = "Vui long dang nhap de truy cap!";
                 return RedirectToAction("Login", "Auth");
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == int.Parse(userId));
             if (user == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy thông tin user!";
+                TempData["ErrorMessage"] = "Khong tim thay thong tin user!";
                 return RedirectToAction("Login", "Auth");
             }
 
-            // Lấy transactions rồi giải mã để hiển thị
+            // ── Task 8: Kiem tra SecurityStamp (logout neu da doi password/bi khoa) ──
+            var sessionStamp = HttpContext.Session.GetString("SecurityStamp");
+            if (sessionStamp != user.SecurityStamp.ToString())
+            {
+                HttpContext.Session.Clear();
+                TempData["ErrorMessage"] = "Phien lam viec het han. Vui long dang nhap lai.";
+                return RedirectToAction("Login", "Auth");
+            }
+
+            // ── Task 5: Tu dong thu hoi VIP het han ──────────────────────
+            if (user.ROLE == "User VIP" &&
+                user.VIPExpiryDate.HasValue &&
+                user.VIPExpiryDate.Value < DateTime.UtcNow)
+            {
+                user.ROLE = "User";
+                await _context.SaveChangesAsync();
+                HttpContext.Session.SetString("UserRole", "User");
+                _audit.LogVipExpired(user.UserId, user.UserName);
+            }
+
+            // ── Task 2: Giai ma Email + Balance ──────────────────────────
+            _userSvc.Decrypt(user);
+
             var rawTxs = await _context.Transactions
                 .Where(t => t.UserId == user.UserId)
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            // Giải mã các trường nhạy cảm trước khi đưa vào View
             var decryptedTxs = rawTxs.Select(t => new
             {
                 t.TransactionId,
@@ -90,7 +121,14 @@ namespace webxemphim.Controllers
 
             if (amount <= 0)
             {
-                TempData["ErrorMessage"] = "Số tiền nạp phải lớn hơn 0!";
+                TempData["ErrorMessage"] = "So tien nap phai lon hon 0!";
+                return RedirectToAction("Deposit");
+            }
+
+            // ── Task 3: Validation so tien ────────────────────────────────
+            if (amount > MaxDepositVND)
+            {
+                TempData["ErrorMessage"] = $"So tien nap toi da la {MaxDepositVND:N0} VND moi lan!";
                 return RedirectToAction("Deposit");
             }
 
@@ -112,7 +150,16 @@ namespace webxemphim.Controllers
 
                 decimal amountInVND = amount * currency.ExchangeRate;
 
-                // ── SECURITY: mã hóa các trường nhạy cảm trước khi lưu DB
+                // ── Task 2: Giai ma Balance hien tai truoc khi cong them ──
+                _userSvc.Decrypt(user);
+
+                // ── Task 3: Kiem tra tong so du khong vuot 500 trieu ──────
+                if (user.Balance + amountInVND > MaxBalanceVND)
+                {
+                    TempData["ErrorMessage"] = $"So du khong duoc vuot {MaxBalanceVND:N0} VND!";
+                    return RedirectToAction("Deposit");
+                }
+
                 var transaction = new Transaction
                 {
                     UserId       = user.UserId,
@@ -121,16 +168,20 @@ namespace webxemphim.Controllers
                     Amount       = _enc.EncryptDecimal(amount),
                     CurrencyCode = _enc.Encrypt(currencyCode),
                     AmountInVND  = _enc.EncryptDecimal(amountInVND),
-                    Description  = $"Nạp tiền: {amount:N2} {currency.Symbol} ({amountInVND:N0} VNĐ)",
+                    Description  = $"Nap tien: {amount:N2} {currency.Symbol} ({amountInVND:N0} VND)",
                     Status       = "Completed",
                     CreatedAt    = DateTime.UtcNow
                 };
 
                 user.Balance += amountInVND;
+                // ── Task 2: Ma hoa lai Balance truoc khi luu ──────────────
+                _userSvc.EncryptBalance(user);
                 _context.Transactions.Add(transaction);
                 await _context.SaveChangesAsync();
 
                 _secLog.LogDeposit(user.UserName, amount.ToString("N0"), currencyCode,
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+                _audit.LogDeposit(user.UserId, user.UserName, amountInVND, currencyCode,
                     HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
                 TempData["SuccessMessage"] = $"Nạp tiền thành công! {amount:N2} {currency.Symbol} = {amountInVND:N0} VNĐ";
@@ -191,9 +242,12 @@ namespace webxemphim.Controllers
 
                 if (user.Balance < cost)
                 {
-                    TempData["ErrorMessage"] = "Số dư không đủ để mua gói VIP này!";
+                    TempData["ErrorMessage"] = "So du khong du de mua goi VIP nay!";
                     return View();
                 }
+
+                // ── Task 2: Giai ma Balance truoc khi tru ─────────────────
+                _userSvc.Decrypt(user);
 
                 // ── SECURITY: mã hóa các trường nhạy cảm trước khi lưu DB
                 var transaction = new Transaction
@@ -217,10 +271,14 @@ namespace webxemphim.Controllers
                 else
                     user.VIPExpiryDate = DateTime.UtcNow.AddDays(days);
 
+                // ── Task 2: Ma hoa lai Balance ────────────────────────────
+                _userSvc.EncryptBalance(user);
                 _context.Transactions.Add(transaction);
                 await _context.SaveChangesAsync();
 
                 _secLog.LogBuyVIP(user.UserName, package,
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+                _audit.LogBuyVIP(user.UserId, user.UserName, package,
                     HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
                 TempData["SuccessMessage"] = $"Mua VIP thành công! {description} - Hết hạn: {user.VIPExpiryDate.Value:dd/MM/yyyy}";
