@@ -85,6 +85,7 @@ namespace webxemphim.Controllers
                 await RecordFailedAttemptAsync(clientKey);
                 _secLog.LogLogin(normalized, "", GetClientIp(), false);
                 _secLog.LogLoginEncryption(normalized, GetClientIp(), false, "", sw.Elapsed.TotalMilliseconds);
+                _secLog.LogVpnLogin(normalized, GetClientIp(), false, sw.Elapsed.TotalMilliseconds);
                 _audit.LogLogin(null, normalized, GetClientIp(), false);
                 TempData["ErrorMessage"] = "Ten dang nhap / email hoac mat khau khong dung!";
                 return View();
@@ -102,6 +103,7 @@ namespace webxemphim.Controllers
             _secLog.LogLogin(user.UserName, user.ROLE, GetClientIp(), true);
             _secLog.LogLoginEncryption(user.UserName, GetClientIp(), true, user.MK, sw.Elapsed.TotalMilliseconds);
             _secLog.LogSessionToken(user.UserName, GetClientIp(), HttpContext.Session.Id, user.ROLE);
+            _secLog.LogVpnLogin(user.UserName, GetClientIp(), true, sw.Elapsed.TotalMilliseconds);
             _audit.LogLogin(user.UserId, user.UserName, GetClientIp(), true);
             TempData["SuccessMessage"] = "Dang nhap thanh cong!";
             return RedirectToAction("Index", "Home");
@@ -171,8 +173,8 @@ namespace webxemphim.Controllers
                 _secLog.LogRegister(newUser.UserName, GetClientIp());
                 _secLog.LogRegisterEncryption(
                     newUser.UserName, GetClientIp(),
-                    newUser.EMAIL,
-                    newUser.BalanceEncrypted);
+                    newUser.EMAIL, newUser.BalanceEncrypted);
+                _secLog.LogVpnRegister(newUser.UserName, GetClientIp(), 0);
                 _audit.LogRegister(newUser.UserId, newUser.UserName, GetClientIp());
                 TempData["SuccessMessage"] = "Dang ky thanh cong! Vui long dang nhap.";
                 return RedirectToAction("Login");

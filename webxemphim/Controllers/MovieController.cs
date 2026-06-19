@@ -355,6 +355,11 @@ namespace webxemphim.Controllers
                 movie.VideoUrl ?? "",
                 decrypted.VideoUrl ?? "",
                 sw.Elapsed.TotalMilliseconds);
+            _secLog.LogVpnVideoRequest(
+                movie.Title,
+                HttpContext.Session.GetString("UserName") ?? "guest",
+                ip,
+                sw.Elapsed.TotalMilliseconds);
 
             return View(decrypted);
         }

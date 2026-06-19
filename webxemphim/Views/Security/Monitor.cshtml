@@ -3,430 +3,361 @@
     var role = Context.Session.GetString("UserRole");
     if (role != "Admin") { Context.Response.Redirect("/"); return; }
 }
-
 <style>
-.mon { max-width: 1400px; margin: 0 auto; padding: 24px 16px; }
-.mon-title { font-size: 1.6rem; font-weight: bold; color: #2ecc71; margin-bottom: 4px; }
-.mon-sub   { color: #aaa; font-size: 0.85rem; margin-bottom: 20px; }
-.live-dot  { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71;
-             display: inline-block; animation: pulse 1.2s infinite; margin-right: 6px; }
-@@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.3)} }
-
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-@@media(max-width:900px){ .stats-row { grid-template-columns: repeat(2,1fr); } }
-.stat-card { background: #232533; border-radius: 10px; padding: 14px 18px; border: 1px solid #333; text-align: center; }
-.stat-num  { font-size: 2rem; font-weight: bold; line-height: 1; }
-.stat-lbl  { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
-
-.panels    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@@media(max-width:1024px){ .panels { grid-template-columns: 1fr; } }
-.panel     { background: #232533; border-radius: 12px; border: 1px solid #333; overflow: hidden; }
-.panel-hdr { display: flex; align-items: center; justify-content: space-between;
-             padding: 12px 16px; border-bottom: 1px solid #333; font-weight: bold; font-size: 0.9rem; }
-.panel-body{ height: 280px; overflow-y: auto; padding: 0; }
-.panel-body::-webkit-scrollbar { width: 4px; }
-.panel-body::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-
-.log-row   { display: flex; gap: 8px; padding: 7px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
-             font-size: 0.78rem; align-items: flex-start; animation: fadeIn .4s; }
-@@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
-.log-time  { color: #666; flex-shrink: 0; font-family: monospace; width: 58px; }
-.log-badge { border-radius: 4px; padding: 1px 6px; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; white-space: nowrap; }
-.log-msg   { flex: 1; color: #ddd; }
-.log-det   { color: #888; font-size: 0.72rem; word-break: break-all; }
-
-.SUCCESS { background:#1a472a; color:#2ecc71; }
-.WARNING { background:#4a2e00; color:#f39c12; }
-.DANGER  { background:#4a0000; color:#e74c3c; }
-.CRYPTO  { background:#1a2a4a; color:#3498db; }
-.FINANCE { background:#2a1a4a; color:#9b59b6; }
-.SECURITY{ background:#1a3a2a; color:#1abc9c; }
-.INFO    { background:#1a1a2a; color:#95a5a6; }
-
-.full-panel { grid-column: 1 / -1; }
-.cnt-badge  { background:#333; color:#aaa; border-radius: 8px; padding: 1px 8px; font-size: 0.75rem; }
-.paused-btn { background: #333; border: 1px solid #555; color: #fff; border-radius: 6px;
-              padding: 3px 10px; font-size: 0.75rem; cursor: pointer; }
-.paused-btn.on { background:#4a2e00; color:#f39c12; border-color:#f39c12; }
+.mon{max-width:1400px;margin:0 auto;padding:24px 16px}
+.mon-title{font-size:1.6rem;font-weight:bold;color:#2ecc71;margin-bottom:4px}
+.mon-sub{color:#aaa;font-size:.85rem;margin-bottom:20px}
+.live-dot{width:10px;height:10px;border-radius:50%;background:#2ecc71;display:inline-block;animation:pulse 1.2s infinite;margin-right:6px}
+@@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:#232533;border-radius:10px;padding:14px 18px;border:1px solid #333;text-align:center}
+.stat-num{font-size:2rem;font-weight:bold;line-height:1}
+.stat-lbl{font-size:.75rem;color:#aaa;margin-top:4px}
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@@media(max-width:1024px){.panels{grid-template-columns:1fr}}
+.panel{background:#232533;border-radius:12px;border:1px solid #333;overflow:hidden}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #333;font-weight:bold;font-size:.9rem}
+.panel-body{height:280px;overflow-y:auto}
+.panel-body::-webkit-scrollbar{width:4px}
+.panel-body::-webkit-scrollbar-thumb{background:#444;border-radius:4px}
+.log-row{display:flex;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.78rem;align-items:flex-start;animation:fadeIn .4s}
+@@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.log-time{color:#666;flex-shrink:0;font-family:monospace;width:58px}
+.log-badge{border-radius:4px;padding:1px 6px;font-size:.7rem;font-weight:bold;flex-shrink:0;white-space:nowrap}
+.log-det{color:#888;font-size:.72rem;word-break:break-all}
+.SUCCESS{background:#1a472a;color:#2ecc71}.WARNING{background:#4a2e00;color:#f39c12}
+.DANGER{background:#4a0000;color:#e74c3c}.CRYPTO{background:#1a2a4a;color:#3498db}
+.FINANCE{background:#2a1a4a;color:#9b59b6}.SECURITY{background:#1a3a2a;color:#1abc9c}
+.INFO{background:#1a1a2a;color:#95a5a6}
+.full{grid-column:1/-1}
+.cnt{background:#333;color:#aaa;border-radius:8px;padding:1px 8px;font-size:.75rem}
+.pbtn{background:#333;border:1px solid #555;color:#fff;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
+.pbtn.on{background:#4a2e00;color:#f39c12;border-color:#f39c12}
 </style>
 
 <div class="mon">
-    <div class="mon-title">
-        <span class="live-dot"></span> Security Monitor Real-time
-    </div>
-    <div class="mon-sub">
-        Tu dong cap nhat moi 5 giay &mdash; Ghi lai toan bo su kien bao mat / ma hoa / nguoi dung &middot; Chi Admin
-    </div>
+<div class="mon-title"><span class="live-dot"></span> Security Monitor Real-time</div>
+<div class="mon-sub">Auto refresh every 5s &mdash; Logs all security/crypto/vpn events &middot; Admin only</div>
 
-    @* ── Stats ── *@
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-num" id="s-login" style="color:#2ecc71">0</div>
-            <div class="stat-lbl">Dang nhap OK</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-num" id="s-fail" style="color:#e74c3c">0</div>
-            <div class="stat-lbl">Dang nhap that bai</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-num" id="s-crypto" style="color:#3498db">0</div>
-            <div class="stat-lbl">Ma hoa / Giai ma</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-num" id="s-finance" style="color:#9b59b6">0</div>
-            <div class="stat-lbl">Giao dich tai chinh</div>
-        </div>
-    </div>
-
-    @* ── Panels ── *@
-    <div class="panels">
-
-        @* Panel 1: Activity Log *@
-        <div class="panel">
-            <div class="panel-hdr" style="color:#2ecc71;">
-                <span><i class="fas fa-stream"></i> Activity Log</span>
-                <span>
-                    <span class="cnt-badge" id="cnt-all">0</span>
-                    <button class="paused-btn" id="btn-pause" onclick="togglePause()">Pause</button>
-                </span>
-            </div>
-            <div class="panel-body" id="feed-all"></div>
-        </div>
-
-        @* Panel 2: Security Events *@
-        <div class="panel">
-            <div class="panel-hdr" style="color:#e74c3c;">
-                <span><i class="fas fa-exclamation-triangle"></i> Security Events</span>
-                <span class="cnt-badge" id="cnt-sec">0</span>
-            </div>
-            <div class="panel-body" id="feed-sec"></div>
-        </div>
-
-        @* Panel 3: Encryption Events *@
-        <div class="panel">
-            <div class="panel-hdr" style="color:#3498db;">
-                <span><i class="fas fa-lock"></i> Encryption / Decryption Events</span>
-                <span class="cnt-badge" id="cnt-cry">0</span>
-            </div>
-            <div class="panel-body" id="feed-cry"></div>
-        </div>
-
-        @* Panel 4: Finance Events *@
-        <div class="panel">
-            <div class="panel-hdr" style="color:#9b59b6;">
-                <span><i class="fas fa-wallet"></i> Finance Events</span>
-                <span class="cnt-badge" id="cnt-fin">0</span>
-            </div>
-            <div class="panel-body" id="feed-fin"></div>
-        </div>
-
-        @* Panel 5: SSTP Flow Diagram *@
-        <div class="panel full-panel">
-            <div class="panel-hdr" style="color:#ffd700;">
-                <span><i class="fas fa-project-diagram"></i> Luong hoat dong SSTP / AES-256-GCM</span>
-                <span id="flow-time" style="color:#666;font-size:0.75rem;"></span>
-            </div>
-            <div style="padding:16px;" id="flow-content">
-                <div style="color:#555;text-align:center;padding:32px;">
-                    Cho su kien ma hoa tu nguoi dung...
-                </div>
-            </div>
-        </div>
-
-        @* Panel 5b: Chi tiet ma hoa theo hanh dong *@
-        <div class="panel full-panel">
-            <div class="panel-hdr" style="color:#e67e22;">
-                <span><i class="fas fa-shield-alt"></i> Chi tiet ma hoa theo hanh dong (Dang nhap / Dang ky / Xem phim / Nap tien)</span>
-                <span class="cnt-badge" id="cnt-detail">0</span>
-            </div>
-            <div class="panel-body" id="feed-detail" style="height:320px;"></div>
-        </div>
-
-        @* Panel 6: Tailscale Connections *@
-        <div class="panel full-panel">
-            <div class="panel-hdr" style="color:#3498db;">
-                <span>
-                    <i class="fas fa-network-wired"></i> Tailscale Connections
-                    <span style="font-size:0.75rem;color:#666;margin-left:8px;">
-                        (IP 100.x.x.x = ket noi qua Tailscale VPN)
-                    </span>
-                </span>
-                <span>
-                    <span class="cnt-badge" id="cnt-ts">0</span>
-                    <span id="ts-status" style="margin-left:8px;font-size:0.75rem;color:#666;">
-                        Chua co ket noi Tailscale
-                    </span>
-                </span>
-            </div>
-            <div style="padding:16px;">
-                @* Bang thong ke Tailscale *@
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
-                    <div style="background:#1a1b2a;border:1px solid #2980b9;border-radius:8px;padding:12px;text-align:center;">
-                        <div style="font-size:1.5rem;font-weight:bold;color:#3498db;" id="ts-total">0</div>
-                        <div style="font-size:0.75rem;color:#aaa;">Tong ket noi Tailscale</div>
-                    </div>
-                    <div style="background:#1a1b2a;border:1px solid #2ecc71;border-radius:8px;padding:12px;text-align:center;">
-                        <div style="font-size:1.5rem;font-weight:bold;color:#2ecc71;" id="ts-login">0</div>
-                        <div style="font-size:0.75rem;color:#aaa;">Dang nhap thanh cong</div>
-                    </div>
-                    <div style="background:#1a1b2a;border:1px solid #9b59b6;border-radius:8px;padding:12px;text-align:center;">
-                        <div style="font-size:1.5rem;font-weight:bold;color:#9b59b6;" id="ts-crypto">0</div>
-                        <div style="font-size:0.75rem;color:#aaa;">Su kien ma hoa</div>
-                    </div>
-                </div>
-
-                @* Bang danh sach ket noi *@
-                <div style="font-size:0.78rem;color:#aaa;margin-bottom:8px;">
-                    DANH SACH SU KIEN TU TAILSCALE (IP bat dau bang 100.)
-                </div>
-                <div id="ts-feed" style="max-height:200px;overflow-y:auto;"></div>
-
-                @* Huong dan *@
-                <div style="margin-top:16px;background:#1a1b2a;border:1px solid #333;border-radius:8px;padding:12px;font-size:0.8rem;color:#888;">
-                    <div style="color:#ffd700;font-weight:bold;margin-bottom:8px;">
-                        <i class="fas fa-info-circle"></i> Cach hoat dong Tailscale + Security Monitor
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                        <div>
-                            <div style="color:#3498db;margin-bottom:4px;">Buoc 1 — Cai Tailscale</div>
-                            <div>Cai tren ca may Server (Railway) va may Client</div>
-                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;">
-                                curl -fsSL https://tailscale.com/install.sh | sh
-                            </div>
-                        </div>
-                        <div>
-                            <div style="color:#3498db;margin-bottom:4px;">Buoc 2 — Ket noi</div>
-                            <div>Dang nhap cung 1 Tailscale account tren ca 2 may</div>
-                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;">
-                                tailscale up --authkey=&lt;key&gt;
-                            </div>
-                        </div>
-                        <div>
-                            <div style="color:#3498db;margin-bottom:4px;">Buoc 3 — Truy cap</div>
-                            <div>Client truy cap webxemphim qua IP Tailscale</div>
-                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;">
-                                http://100.x.x.x:8080
-                            </div>
-                        </div>
-                        <div>
-                            <div style="color:#3498db;margin-bottom:4px;">Buoc 4 — Quan sat</div>
-                            <div>Admin thay IP 100.x.x.x trong Monitor nay</div>
-                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;color:#2ecc71;">
-                                IP: 100.x.x.x → Tailscale
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div style="text-align:right;margin-top:12px;color:#555;font-size:0.8rem;">
-        Server time: <span id="srv-time">--:--:--</span> UTC
-        &nbsp;|&nbsp;
-        <a href="/Security" style="color:#aaa;">&larr; Test SSTP</a>
-        &nbsp;|&nbsp;
-        <a href="/" style="color:#aaa;">&larr; Trang chu</a>
-    </div>
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-num" id="s-login" style="color:#2ecc71">0</div><div class="stat-lbl">Login OK</div></div>
+  <div class="stat-card"><div class="stat-num" id="s-fail"  style="color:#e74c3c">0</div><div class="stat-lbl">Login Failed</div></div>
+  <div class="stat-card"><div class="stat-num" id="s-crypto" style="color:#3498db">0</div><div class="stat-lbl">Encrypt / Decrypt</div></div>
+  <div class="stat-card"><div class="stat-num" id="s-finance" style="color:#9b59b6">0</div><div class="stat-lbl">Finance Events</div></div>
 </div>
+
+<div class="panels">
+
+@* Panel 1 *@
+<div class="panel">
+  <div class="panel-hdr" style="color:#2ecc71">
+    <span><i class="fas fa-stream"></i> Activity Log</span>
+    <span><span class="cnt" id="cnt-all">0</span>
+    <button class="pbtn" id="btn-pause" onclick="togglePause()">Pause</button></span>
+  </div>
+  <div class="panel-body" id="feed-all"></div>
+</div>
+
+@* Panel 2 *@
+<div class="panel">
+  <div class="panel-hdr" style="color:#e74c3c"><span><i class="fas fa-exclamation-triangle"></i> Security Events</span><span class="cnt" id="cnt-sec">0</span></div>
+  <div class="panel-body" id="feed-sec"></div>
+</div>
+
+@* Panel 3 *@
+<div class="panel">
+  <div class="panel-hdr" style="color:#3498db"><span><i class="fas fa-lock"></i> Encryption / Decryption</span><span class="cnt" id="cnt-cry">0</span></div>
+  <div class="panel-body" id="feed-cry"></div>
+</div>
+
+@* Panel 4 *@
+<div class="panel">
+  <div class="panel-hdr" style="color:#9b59b6"><span><i class="fas fa-wallet"></i> Finance Events</span><span class="cnt" id="cnt-fin">0</span></div>
+  <div class="panel-body" id="feed-fin"></div>
+</div>
+
+@* Panel 5: SSTP Flow *@
+<div class="panel full">
+  <div class="panel-hdr" style="color:#ffd700">
+    <span><i class="fas fa-project-diagram"></i> SSTP / AES-256-GCM Flow</span>
+    <span id="flow-time" style="color:#666;font-size:.75rem"></span>
+  </div>
+  <div style="padding:16px" id="flow-content">
+    <div style="color:#555;text-align:center;padding:32px">Waiting for crypto event...</div>
+  </div>
+</div>
+
+@* Panel 5b: Crypto Detail *@
+<div class="panel full">
+  <div class="panel-hdr" style="color:#e67e22">
+    <span><i class="fas fa-shield-alt"></i> Crypto Detail by Action (Login / Register / Watch / Deposit)</span>
+    <span class="cnt" id="cnt-detail">0</span>
+  </div>
+  <div class="panel-body" id="feed-detail" style="height:320px"></div>
+</div>
+
+@* Panel 6: Tailscale *@
+<div class="panel full">
+  <div class="panel-hdr" style="color:#3498db">
+    <span><i class="fas fa-network-wired"></i> Tailscale Connections <span style="font-size:.75rem;color:#666;margin-left:8px">(IP 100.x.x.x = Tailscale VPN)</span></span>
+    <span><span class="cnt" id="cnt-ts">0</span>
+    <span id="ts-status" style="margin-left:8px;font-size:.75rem;color:#666">No Tailscale yet</span></span>
+  </div>
+  <div style="padding:16px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div style="background:#1a1b2a;border:1px solid #2980b9;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:bold;color:#3498db" id="ts-total">0</div>
+        <div style="font-size:.75rem;color:#aaa">Total Tailscale</div>
+      </div>
+      <div style="background:#1a1b2a;border:1px solid #2ecc71;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:bold;color:#2ecc71" id="ts-login">0</div>
+        <div style="font-size:.75rem;color:#aaa">Login OK</div>
+      </div>
+      <div style="background:#1a1b2a;border:1px solid #9b59b6;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:bold;color:#9b59b6" id="ts-crypto">0</div>
+        <div style="font-size:.75rem;color:#aaa">Crypto Events</div>
+      </div>
+    </div>
+    <div id="ts-feed" style="max-height:200px;overflow-y:auto"></div>
+  </div>
+</div>
+
+@* Panel 7: VPN Traffic Flow *@
+<div class="panel full">
+  <div class="panel-hdr" style="color:#e74c3c">
+    <span><i class="fas fa-exchange-alt"></i> VPN Traffic Flow
+    <span style="font-size:.75rem;color:#666;margin-left:8px">Client &#8594; Server (C&#8594;S) | Server &#8594; Client (S&#8594;C)</span></span>
+    <span><span class="cnt" id="cnt-vpn">0</span>
+    <span id="vpn-last" style="margin-left:8px;font-size:.75rem;color:#666">No traffic yet</span></span>
+  </div>
+  <div style="padding:16px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+      <div style="background:#1a1b2a;border:1px solid #e74c3c;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:bold;color:#e74c3c" id="vpn-c2s">0</div>
+        <div style="font-size:.72rem;color:#aaa">Client &#8594; Server</div>
+      </div>
+      <div style="background:#1a1b2a;border:1px solid #2ecc71;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:bold;color:#2ecc71" id="vpn-s2c">0</div>
+        <div style="font-size:.72rem;color:#aaa">Server &#8594; Client</div>
+      </div>
+      <div style="background:#1a1b2a;border:1px solid #3498db;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:bold;color:#3498db" id="vpn-ts-n">0</div>
+        <div style="font-size:.72rem;color:#aaa">Via Tailscale</div>
+      </div>
+      <div style="background:#1a1b2a;border:1px solid #9b59b6;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:bold;color:#9b59b6" id="vpn-https-n">0</div>
+        <div style="font-size:.72rem;color:#aaa">Via HTTPS/TLS</div>
+      </div>
+    </div>
+    <div id="vpn-diagram" style="margin-bottom:12px;display:none">
+      <div style="font-size:.78rem;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Latest Traffic Flow</div>
+      <div style="display:flex;align-items:center;overflow-x:auto;padding:4px 0" id="vpn-steps"></div>
+    </div>
+    <div style="font-size:.78rem;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Traffic History</div>
+    <div id="vpn-feed" style="max-height:260px;overflow-y:auto"></div>
+  </div>
+</div>
+
+</div>@* end .panels *@
+
+<div style="text-align:right;margin-top:12px;color:#555;font-size:.8rem">
+  Server time: <span id="srv-time">--:--:--</span> UTC &nbsp;|&nbsp;
+  <a href="/Security" style="color:#aaa">&larr; Test SSTP</a> &nbsp;|&nbsp;
+  <a href="/" style="color:#aaa">&larr; Home</a>
+</div>
+</div>@* end .mon *@
 
 @section Scripts {
 <script>
-let paused    = false;
-let lastId    = 0;
-const colors  = {SUCCESS:'#2ecc71',WARNING:'#f39c12',DANGER:'#e74c3c',CRYPTO:'#3498db',FINANCE:'#9b59b6',SECURITY:'#1abc9c',INFO:'#95a5a6'};
+let paused=false,lastId=0;
+let tsTotal=0,tsLogin=0,tsCrypto=0;
+let vpnC2s=0,vpnS2c=0,vpnTs=0,vpnHttps=0;
 
-// Kiem tra IP co phai Tailscale khong (100.64.0.0/10)
-function isTailscale(ip) {
-    if (!ip) return false;
-    const parts = ip.split('.');
-    if (parts.length < 2) return false;
-    const first  = parseInt(parts[0]);
-    const second = parseInt(parts[1]);
-    // 100.64.0.0 - 100.127.255.255
-    return first === 100 && second >= 64 && second <= 127;
+function isTailscale(ip){
+  if(!ip)return false;
+  const p=ip.split('.');
+  return p.length>=2&&parseInt(p[0])===100&&parseInt(p[1])>=64&&parseInt(p[1])<=127;
 }
 
-// Tailscale counters
-let tsTotal = 0, tsLogin = 0, tsCrypto = 0;
-
-// Render hang chi tiet ma hoa — hien thi dep hon cho giao vien xem
-function detailRow(e) {
-    const icons = {
-        'AUTH_CRYPTO'      : { icon:'fa-key',          color:'#f39c12', label:'BCrypt Verify'    },
-        'REGISTER_CRYPTO'  : { icon:'fa-user-shield',  color:'#2ecc71', label:'Register Encrypt' },
-        'VIDEO_CRYPTO'     : { icon:'fa-film',          color:'#3498db', label:'Video Decrypt'    },
-        'DEPOSIT_CRYPTO'   : { icon:'fa-wallet',        color:'#9b59b6', label:'Deposit Encrypt'  },
-        'SESSION_TOKEN'    : { icon:'fa-ticket-alt',    color:'#1abc9c', label:'Session Token'    },
-    };
-    const meta  = icons[e.category] || { icon:'fa-lock', color:'#aaa', label:e.category };
-    const tsTag = isTailscale(e.ipAddress)
-        ? '<span style="background:#1a2a4a;color:#3498db;padding:1px 6px;border-radius:4px;font-size:0.7rem;margin-left:4px;"><i class="fas fa-network-wired"></i> Tailscale</span>'
-        : '';
-
-    return '<div style="display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);animation:fadeIn .4s;">'
-        + '<div style="background:' + meta.color + '22;border:1px solid ' + meta.color + ';border-radius:8px;'
-        +      'padding:8px 10px;text-align:center;min-width:80px;flex-shrink:0;">'
-        +     '<i class="fas ' + meta.icon + '" style="color:' + meta.color + ';font-size:1.2rem;"></i>'
-        +     '<div style="font-size:0.65rem;color:' + meta.color + ';margin-top:4px;font-weight:bold;">' + meta.label + '</div>'
-        + '</div>'
-        + '<div style="flex:1;">'
-        +     '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-        +         '<span style="color:#fff;font-weight:bold;font-size:0.88rem;">' + e.message + '</span>'
-        +         tsTag
-        +         '<span style="color:#555;font-size:0.75rem;margin-left:auto;">' + e.time + ' UTC</span>'
-        +     '</div>'
-        +     '<div style="font-family:monospace;font-size:0.75rem;color:#7fdbff;background:#1a1b2a;'
-        +          'padding:6px 8px;border-radius:6px;word-break:break-all;">'
-        +         e.detail
-        +     '</div>'
-        +     (e.ipAddress && e.ipAddress !== 'internal'
-        +         ? '<div style="font-size:0.72rem;color:#555;margin-top:3px;">IP: ' + e.ipAddress + '</div>'
-        +         : '')
-        + '</div>'
-        + '</div>';
+function togglePause(){
+  paused=!paused;
+  const b=document.getElementById('btn-pause');
+  b.textContent=paused?'Resume':'Pause';
+  b.className=paused?'pbtn on':'pbtn';
 }
 
-function togglePause() {
-    paused = !paused;
-    const btn = document.getElementById('btn-pause');
-    btn.textContent = paused ? 'Resume' : 'Pause';
-    btn.className   = paused ? 'paused-btn on' : 'paused-btn';
+function prepend(id,html){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.insertAdjacentHTML('afterbegin',html);
+  while(el.children.length>80)el.removeChild(el.lastChild);
 }
 
-function row(e) {
-    const tsTag = isTailscale(e.ipAddress)
-        ? ' <span style="background:#1a2a4a;color:#3498db;padding:1px 6px;border-radius:4px;font-size:0.7rem;margin-left:4px;">Tailscale</span>'
-        : '';
-    return '<div class="log-row">'
-        + '<span class="log-time">' + e.time + '</span>'
-        + '<span class="log-badge ' + e.level + '">' + e.category + '</span>'
-        + '<div style="flex:1"><div class="log-msg">' + e.message
-        + (e.userName && e.userName !== 'System' ? ' <span style="color:#666">| ' + e.userName + '</span>' : '')
-        + (e.ipAddress && e.ipAddress !== 'internal' && e.ipAddress !== 'unknown'
-            ? ' <span style="color:#444">IP:' + e.ipAddress + '</span>' + tsTag
-            : '')
-        + '</div>'
-        + (e.detail ? '<div class="log-det">' + e.detail + '</div>' : '')
-        + '</div></div>';
+function updateStats(s){
+  document.getElementById('s-login').textContent=(s.LOGIN_OK||0);
+  document.getElementById('s-fail').textContent=(s.LOGIN_FAIL||0)+(s.LOCKOUT||0);
+  document.getElementById('s-crypto').textContent=(s.ENCRYPT||0)+(s.DECRYPT||0);
+  document.getElementById('s-finance').textContent=(s.DEPOSIT||0)+(s.BUY_VIP||0);
 }
 
-function prepend(id, html) {
-    const el = document.getElementById(id);
-    el.insertAdjacentHTML('afterbegin', html);
-    // Giu toi da 80 dong moi panel
-    while (el.children.length > 80) el.removeChild(el.lastChild);
+function tsTag(ip){
+  return isTailscale(ip)
+    ?'<span style="background:#1a2a4a;color:#3498db;padding:1px 5px;border-radius:4px;font-size:.68rem;margin-left:4px">Tailscale</span>'
+    :'';
 }
 
-function updateStats(stats) {
-    document.getElementById('s-login').textContent   = (stats.LOGIN_OK || 0);
-    document.getElementById('s-fail').textContent    = (stats.LOGIN_FAIL || 0) + (stats.LOCKOUT || 0);
-    document.getElementById('s-crypto').textContent  = (stats.ENCRYPT || 0) + (stats.DECRYPT || 0);
-    document.getElementById('s-finance').textContent = (stats.DEPOSIT || 0) + (stats.BUY_VIP || 0);
+function row(e){
+  return '<div class="log-row">'
+    +'<span class="log-time">'+e.time+'</span>'
+    +'<span class="log-badge '+e.level+'">'+e.category+'</span>'
+    +'<div style="flex:1"><div style="color:#ddd">'
+    +e.message
+    +(e.userName&&e.userName!=='System'?' <span style="color:#666">| '+e.userName+'</span>':'')
+    +(e.ipAddress&&e.ipAddress!=='internal'&&e.ipAddress!=='unknown'
+      ?' <span style="color:#444">IP:'+e.ipAddress+'</span>'+tsTag(e.ipAddress):'')
+    +'</div>'
+    +(e.detail?'<div class="log-det">'+e.detail+'</div>':'')
+    +'</div></div>';
 }
 
-function updateFlow(events) {
-    const enc = events.filter(e => e.category === 'ENCRYPT' || e.category === 'DECRYPT');
-    if (!enc.length) return;
-    const last = enc[0];
-    const steps = [
-        { n:1, lbl:'Du lieu dau vao', val: last.message, color:'#ffd700' },
-        { n:2, lbl:'Sinh Nonce ngau nhien (96-bit)', val:'AES-GCM: RandomNumberGenerator.Fill(nonce[12])', color:'#3498db' },
-        { n:3, lbl:'Ma hoa AES-256-GCM', val:'Key(256-bit) + Nonce(96-bit) --> Ciphertext + Auth Tag(128-bit)', color:'#e74c3c' },
-        { n:4, lbl:'Dong goi Base64', val:'Nonce[12] + Tag[16] + Cipher[n] --> Base64 string', color:'#9b59b6' },
-        { n:5, lbl:'Luu Database', val: last.detail, color:'#2ecc71' },
-    ];
-    let html = '<div style="display:flex;gap:0;align-items:stretch;">';
-    for (const s of steps) {
-        html += '<div style="flex:1;background:#1a1b2a;border:1px solid ' + s.color + ';border-radius:8px;margin:4px;padding:10px 8px;text-align:center;">'
-             +  '<div style="background:' + s.color + ';color:#000;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem;margin:0 auto 8px;">' + s.n + '</div>'
-             +  '<div style="font-weight:bold;color:#fff;font-size:0.78rem;margin-bottom:6px;">' + s.lbl + '</div>'
-             +  '<div style="font-family:monospace;font-size:0.7rem;color:' + s.color + ';word-break:break-all;">' + s.val + '</div>'
-             +  '</div>';
+function detailRow(e){
+  const icons={'AUTH_CRYPTO':{i:'fa-key',c:'#f39c12',l:'BCrypt'},'REGISTER_CRYPTO':{i:'fa-user-shield',c:'#2ecc71',l:'Register'},'VIDEO_CRYPTO':{i:'fa-film',c:'#3498db',l:'Video'},'DEPOSIT_CRYPTO':{i:'fa-wallet',c:'#9b59b6',l:'Deposit'},'SESSION_TOKEN':{i:'fa-ticket-alt',c:'#1abc9c',l:'Session'}};
+  const m=icons[e.category]||{i:'fa-lock',c:'#aaa',l:e.category};
+  return '<div style="display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);animation:fadeIn .4s">'
+    +'<div style="background:'+m.c+'22;border:1px solid '+m.c+';border-radius:8px;padding:8px 10px;text-align:center;min-width:80px;flex-shrink:0">'
+    +'<i class="fas '+m.i+'" style="color:'+m.c+';font-size:1.2rem"></i>'
+    +'<div style="font-size:.65rem;color:'+m.c+';margin-top:4px;font-weight:bold">'+m.l+'</div></div>'
+    +'<div style="flex:1">'
+    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+    +'<span style="color:#fff;font-weight:bold;font-size:.88rem">'+e.message+'</span>'
+    +tsTag(e.ipAddress)
+    +'<span style="color:#555;font-size:.75rem;margin-left:auto">'+e.time+' UTC</span></div>'
+    +'<div style="font-family:monospace;font-size:.75rem;color:#7fdbff;background:#1a1b2a;padding:6px 8px;border-radius:6px;word-break:break-all">'+e.detail+'</div>'
+    +(e.ipAddress&&e.ipAddress!=='internal'?'<div style="font-size:.72rem;color:#555;margin-top:3px">IP: '+e.ipAddress+'</div>':'')
+    +'</div></div>';
+}
+
+function vpnRow(e){
+  const c2s=e.category==='VPN_C2S';
+  const dir=c2s?'C&#8594;S':'S&#8594;C';
+  const col=c2s?'#e74c3c':'#2ecc71';
+  const bg=c2s?'#2a0000':'#002a0a';
+  const tt=isTailscale(e.ipAddress)
+    ?'<span style="background:#1a2a4a;color:#3498db;padding:1px 5px;border-radius:4px;font-size:.68rem;margin-left:4px">Tailscale</span>'
+    :'<span style="background:#1a1a2a;color:#9b59b6;padding:1px 5px;border-radius:4px;font-size:.68rem;margin-left:4px">HTTPS</span>';
+  return '<div style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);animation:fadeIn .4s">'
+    +'<div style="background:'+bg+';border:1px solid '+col+';border-radius:6px;padding:4px 8px;font-weight:bold;font-size:.75rem;color:'+col+';flex-shrink:0;min-width:44px;text-align:center">'+dir+'</div>'
+    +'<div style="flex:1">'
+    +'<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">'
+    +'<span style="color:#fff;font-size:.85rem;font-weight:500">'+e.message+'</span>'+tt
+    +'<span style="color:#555;font-size:.72rem;margin-left:auto">'+e.time+'</span></div>'
+    +'<div style="font-family:monospace;font-size:.72rem;color:#7fdbff;background:#1a1b2a;padding:4px 8px;border-radius:4px;word-break:break-all">'+e.detail+'</div>'
+    +'</div></div>';
+}
+
+function updateFlow(events){
+  const enc=events.filter(e=>e.category==='ENCRYPT'||e.category==='DECRYPT');
+  if(!enc.length)return;
+  const last=enc[0];
+  const steps=[
+    {n:1,lbl:'Input data',val:last.message,c:'#ffd700'},
+    {n:2,lbl:'Random Nonce (96-bit)',val:'RandomNumberGenerator.Fill(nonce[12])',c:'#3498db'},
+    {n:3,lbl:'AES-256-GCM Encrypt',val:'Key+Nonce -> Ciphertext+AuthTag(128-bit)',c:'#e74c3c'},
+    {n:4,lbl:'Base64 pack',val:'Nonce[12]+Tag[16]+Cipher -> Base64',c:'#9b59b6'},
+    {n:5,lbl:'Save to DB',val:last.detail.substring(0,60)+'...',c:'#2ecc71'}
+  ];
+  let html='<div style="display:flex;gap:0;align-items:stretch">';
+  steps.forEach(s=>{
+    html+='<div style="flex:1;background:#1a1b2a;border:1px solid '+s.c+';border-radius:8px;margin:4px;padding:10px 8px;text-align:center">'
+      +'<div style="background:'+s.c+';color:#000;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:.8rem;margin:0 auto 8px">'+s.n+'</div>'
+      +'<div style="font-weight:bold;color:#fff;font-size:.78rem;margin-bottom:6px">'+s.lbl+'</div>'
+      +'<div style="font-family:monospace;font-size:.7rem;color:'+s.c+';word-break:break-all">'+s.val+'</div></div>';
+  });
+  html+='</div>';
+  document.getElementById('flow-content').innerHTML=html;
+  document.getElementById('flow-time').textContent='Updated: '+last.time+' UTC';
+}
+
+function updateVpnDiagram(evts){
+  if(!evts.length)return;
+  const steps=evts.slice(0,4);
+  const tunnel=isTailscale(steps[0].ipAddress)?'Tailscale/WireGuard':'HTTPS/TLS';
+  let html='';
+  steps.forEach((e,i)=>{
+    const c2s=e.category==='VPN_C2S';
+    const col=c2s?'#e74c3c':'#2ecc71';
+    const lbl=c2s?'CLIENT':'SERVER';
+    html+='<div style="flex:1;min-width:150px;background:#1a1b2a;border:1px solid '+col+';border-radius:8px;margin:0 4px;padding:10px;text-align:center">'
+      +'<div style="font-size:.68rem;color:'+col+';font-weight:bold;margin-bottom:4px">'+lbl+'</div>'
+      +'<div style="font-size:.72rem;color:#fff;margin-bottom:4px">'+e.message.replace(/\[.*?\]/,'').trim()+'</div>'
+      +'<div style="font-size:.65rem;color:#666;font-family:monospace">'+tunnel+'</div></div>';
+    if(i<steps.length-1)html+='<div style="color:#555;font-size:1.2rem;flex-shrink:0">&#8594;</div>';
+  });
+  document.getElementById('vpn-steps').innerHTML=html;
+  document.getElementById('vpn-diagram').style.display='block';
+}
+
+async function poll(){
+  try{
+    const r=await fetch('/Security/LiveFeed?count=80');
+    if(!r.ok)return;
+    const d=await r.json();
+    document.getElementById('srv-time').textContent=d.serverTime;
+    updateStats(d.stats);
+    if(paused)return;
+    const ne=d.events.filter(e=>e.id>lastId);
+    if(!ne.length)return;
+    lastId=Math.max(...d.events.map(e=>e.id));
+
+    prepend('feed-all',ne.map(row).join(''));
+    document.getElementById('cnt-all').textContent=d.total;
+
+    const sec=ne.filter(e=>['LOGIN_FAIL','LOCKOUT','RATE_LIMIT','CSRF_TOKEN'].includes(e.category));
+    if(sec.length){prepend('feed-sec',sec.map(row).join(''));document.getElementById('cnt-sec').textContent=(d.stats.LOGIN_FAIL||0)+(d.stats.LOCKOUT||0);}
+
+    const cry=ne.filter(e=>['ENCRYPT','DECRYPT'].includes(e.category));
+    if(cry.length){prepend('feed-cry',cry.map(row).join(''));document.getElementById('cnt-cry').textContent=(d.stats.ENCRYPT||0)+(d.stats.DECRYPT||0);updateFlow(d.events);}
+
+    const fin=ne.filter(e=>['DEPOSIT','BUY_VIP'].includes(e.category));
+    if(fin.length){prepend('feed-fin',fin.map(row).join(''));document.getElementById('cnt-fin').textContent=(d.stats.DEPOSIT||0)+(d.stats.BUY_VIP||0);}
+
+    const detCats=['AUTH_CRYPTO','REGISTER_CRYPTO','VIDEO_CRYPTO','DEPOSIT_CRYPTO','SESSION_TOKEN'];
+    const det=ne.filter(e=>detCats.includes(e.category));
+    if(det.length){prepend('feed-detail',det.map(detailRow).join(''));document.getElementById('cnt-detail').textContent=d.events.filter(e=>detCats.includes(e.category)).length;}
+
+    const ts=ne.filter(e=>isTailscale(e.ipAddress));
+    if(ts.length){
+      tsTotal+=ts.length;tsLogin+=ts.filter(e=>e.category==='LOGIN_OK').length;
+      tsCrypto+=ts.filter(e=>['ENCRYPT','DECRYPT','AUTH_CRYPTO','REGISTER_CRYPTO','VIDEO_CRYPTO','DEPOSIT_CRYPTO'].includes(e.category)).length;
+      document.getElementById('ts-total').textContent=tsTotal;
+      document.getElementById('ts-login').textContent=tsLogin;
+      document.getElementById('ts-crypto').textContent=tsCrypto;
+      document.getElementById('cnt-ts').textContent=tsTotal;
+      document.getElementById('ts-status').textContent='Last: '+ts[0].time+' UTC | IP:'+ts[0].ipAddress;
+      document.getElementById('ts-status').style.color='#3498db';
+      prepend('ts-feed',ts.map(row).join(''));
     }
-    html += '</div>';
-    document.getElementById('flow-content').innerHTML = html;
-    document.getElementById('flow-time').textContent  = 'Cap nhat: ' + last.time + ' UTC';
+
+    const vpn=ne.filter(e=>['VPN_C2S','VPN_S2C'].includes(e.category));
+    if(vpn.length){
+      vpn.forEach(e=>{
+        if(e.category==='VPN_C2S')vpnC2s++;else vpnS2c++;
+        if(isTailscale(e.ipAddress))vpnTs++;else vpnHttps++;
+      });
+      document.getElementById('cnt-vpn').textContent=vpnC2s+vpnS2c;
+      document.getElementById('vpn-c2s').textContent=vpnC2s;
+      document.getElementById('vpn-s2c').textContent=vpnS2c;
+      document.getElementById('vpn-ts-n').textContent=vpnTs;
+      document.getElementById('vpn-https-n').textContent=vpnHttps;
+      document.getElementById('vpn-last').textContent='Last: '+vpn[0].time+' UTC';
+      document.getElementById('vpn-last').style.color='#e74c3c';
+      prepend('vpn-feed',vpn.map(vpnRow).join(''));
+      updateVpnDiagram(d.events.filter(e=>['VPN_C2S','VPN_S2C'].includes(e.category)));
+    }
+  }catch(e){/* silent */}
 }
 
-async function poll() {
-    try {
-        const r = await fetch('/Security/LiveFeed?count=80');
-        if (!r.ok) return;
-        const d = await r.json();
-
-        document.getElementById('srv-time').textContent = d.serverTime;
-        updateStats(d.stats);
-
-        if (paused) return;
-
-        // Chi hien thi ban ghi moi hon lastId
-        const newEvts = d.events.filter(e => e.id > lastId);
-        if (!newEvts.length) return;
-        lastId = Math.max(...d.events.map(e => e.id));
-
-        // All
-        const allHtml = newEvts.map(row).join('');
-        prepend('feed-all', allHtml);
-        document.getElementById('cnt-all').textContent = d.total;
-
-        // Security (LOGIN_FAIL, LOCKOUT, RATE_LIMIT, CSRF_TOKEN)
-        const secEvts = newEvts.filter(e => ['LOGIN_FAIL','LOCKOUT','RATE_LIMIT','CSRF_TOKEN'].includes(e.category));
-        if (secEvts.length) {
-            prepend('feed-sec', secEvts.map(row).join(''));
-            document.getElementById('cnt-sec').textContent = d.stats.LOGIN_FAIL + (d.stats.LOCKOUT || 0);
-        }
-
-        // Crypto
-        const cryEvts = newEvts.filter(e => ['ENCRYPT','DECRYPT'].includes(e.category));
-        if (cryEvts.length) {
-            prepend('feed-cry', cryEvts.map(row).join(''));
-            document.getElementById('cnt-cry').textContent = (d.stats.ENCRYPT || 0) + (d.stats.DECRYPT || 0);
-            updateFlow(d.events);
-        }
-
-        // Finance
-        const finEvts = newEvts.filter(e => ['DEPOSIT','BUY_VIP'].includes(e.category));
-        if (finEvts.length) {
-            prepend('feed-fin', finEvts.map(row).join(''));
-            document.getElementById('cnt-fin').textContent = (d.stats.DEPOSIT || 0) + (d.stats.BUY_VIP || 0);
-        }
-
-        // Tailscale — loc su kien co IP 100.x.x.x
-        const tsEvts = newEvts.filter(e => isTailscale(e.ipAddress));
-        if (tsEvts.length) {
-            tsTotal += tsEvts.length;
-            tsLogin  += tsEvts.filter(e => e.category === 'LOGIN_OK').length;
-            tsCrypto += tsEvts.filter(e => ['ENCRYPT','DECRYPT','AUTH_CRYPTO',
-                                            'REGISTER_CRYPTO','VIDEO_CRYPTO',
-                                            'DEPOSIT_CRYPTO'].includes(e.category)).length;
-
-            document.getElementById('ts-total').textContent  = tsTotal;
-            document.getElementById('ts-login').textContent  = tsLogin;
-            document.getElementById('ts-crypto').textContent = tsCrypto;
-            document.getElementById('cnt-ts').textContent    = tsTotal;
-            document.getElementById('ts-status').textContent =
-                'Ket noi cuoi: ' + tsEvts[0].time + ' UTC | IP: ' + tsEvts[0].ipAddress;
-            document.getElementById('ts-status').style.color = '#3498db';
-            prepend('ts-feed', tsEvts.map(row).join(''));
-        }
-
-        // Chi tiet ma hoa theo hanh dong
-        const detailCats = ['AUTH_CRYPTO','REGISTER_CRYPTO','VIDEO_CRYPTO',
-                            'DEPOSIT_CRYPTO','SESSION_TOKEN'];
-        const detailEvts = newEvts.filter(e => detailCats.includes(e.category));
-        if (detailEvts.length) {
-            prepend('feed-detail', detailEvts.map(e => detailRow(e)).join(''));
-            document.getElementById('cnt-detail').textContent =
-                d.events.filter(e => detailCats.includes(e.category)).length;
-        }
-
-    } catch(e) { /* silent */ }
-}
-
-// Poll ngay lap tuc, sau do moi 5 giay
 poll();
-setInterval(poll, 5000);
+setInterval(poll,5000);
 </script>
-}
+}</script>

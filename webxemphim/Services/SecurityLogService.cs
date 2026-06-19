@@ -247,6 +247,105 @@ namespace webxemphim.Services
                 && int.TryParse(p[1], out var b) && b >= 64 && b <= 127;
         }
 
+        // ── VPN Traffic Flow ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Log luong traffic Client → VPN Server → App va nguoc lai.
+        /// Direction: "C→S" (Client to Server) hoac "S→C" (Server to Client)
+        /// </summary>
+        public void LogVpnTraffic(
+            string direction,      // "C->S" hoac "S->C"
+            string action,         // "LOGIN", "REGISTER", "WATCH", "DEPOSIT"...
+            string userName,
+            string clientIp,
+            string payloadType,    // "Encrypted" hoac "Decrypted"
+            string algorithm,      // "AES-256-GCM", "BCrypt", "ChaCha20-Poly1305"
+            string dataPreview,    // Mo ta du lieu (khong lo thong tin that)
+            int    byteSize,       // Kich thuoc uoc tinh
+            double ms)
+        {
+            var isTailscaleConn = IsTailscale(clientIp);
+            var tunnel          = isTailscaleConn ? "Tailscale/WireGuard" : "HTTPS/TLS";
+
+            Add(new SecurityEvent
+            {
+                Category  = direction == "C->S" ? "VPN_C2S" : "VPN_S2C",
+                Level     = "CRYPTO",
+                Message   = $"[{direction}] {action}: {userName}",
+                UserName  = userName,
+                IpAddress = clientIp,
+                Detail    = $"Tunnel: {tunnel} | " +
+                            $"Payload: {payloadType} ({algorithm}) | " +
+                            $"Data: {dataPreview} | " +
+                            $"~{byteSize}B | {ms:F1}ms"
+            });
+        }
+
+        // Shortcut methods cho tung hanh dong
+
+        public void LogVpnLogin(string userName, string ip, bool success, double ms)
+        {
+            // Client → Server: gui credentials
+            LogVpnTraffic("C->S", "LOGIN_REQUEST", userName, ip,
+                "Encrypted", "ChaCha20-Poly1305",
+                success ? "credentials (ma hoa tunnel)" : "credentials (sai)",
+                256, ms);
+
+            // Server → Client: tra ve session token
+            if (success)
+                LogVpnTraffic("S->C", "LOGIN_RESPONSE", userName, ip,
+                    "Encrypted", "ChaCha20-Poly1305",
+                    "Session cookie (HttpOnly, SameSite=Strict)",
+                    128, ms);
+        }
+
+        public void LogVpnRegister(string userName, string ip, double ms)
+        {
+            // Client → Server: gui form dang ky
+            LogVpnTraffic("C->S", "REGISTER_REQUEST", userName, ip,
+                "Encrypted", "ChaCha20-Poly1305",
+                "username + email + password (ma hoa tunnel)",
+                512, ms);
+
+            // Server: ma hoa va luu DB
+            LogVpnTraffic("S->C", "REGISTER_RESPONSE", userName, ip,
+                "Encrypted", "AES-256-GCM",
+                "Email→cipher, Password→BCrypt, Balance→cipher luu DB",
+                256, ms);
+        }
+
+        public void LogVpnVideoRequest(string movieTitle, string userName,
+                                       string ip, double ms)
+        {
+            // Client → Server: yeu cau xem phim
+            LogVpnTraffic("C->S", "VIDEO_REQUEST", userName, ip,
+                "Encrypted", "ChaCha20-Poly1305",
+                $"Request: /Movie/Player/{movieTitle}",
+                128, ms);
+
+            // Server → Client: tra ve stream video (da giai ma URL)
+            LogVpnTraffic("S->C", "VIDEO_STREAM", userName, ip,
+                "Encrypted", "ChaCha20-Poly1305",
+                $"Video stream: {movieTitle} (URL giai ma AES-256-GCM)",
+                1024 * 1024, ms); // ~1MB uoc tinh
+        }
+
+        public void LogVpnDeposit(string userName, string ip,
+                                  decimal amount, string currency, double ms)
+        {
+            // Client → Server: gui so tien nap
+            LogVpnTraffic("C->S", "DEPOSIT_REQUEST", userName, ip,
+                "Encrypted", "ChaCha20-Poly1305",
+                $"amount={amount:N0} {currency} + CSRF token",
+                256, ms);
+
+            // Server → Client: xac nhan + tra ve so du moi
+            LogVpnTraffic("S->C", "DEPOSIT_RESPONSE", userName, ip,
+                "Encrypted", "AES-256-GCM",
+                $"Amount→cipher luu DB, Balance→cipher cap nhat",
+                128, ms);
+        }
+
         // ── Query ─────────────────────────────────────────────────────────────
 
         /// <summary>Lay n ban ghi moi nhat, loc theo category neu co.</summary>
