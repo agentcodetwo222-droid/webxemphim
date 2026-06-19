@@ -44,6 +44,9 @@ var app = builder.Build();
 // resetIfExists: true  → xóa admin cũ và tạo lại (dùng khi reset)
 await SeedAdmin.RunAsync(app.Services, resetIfExists: false);
 
+// ── In thong tin ket noi mang ──────────────────────────────────────────────
+NetworkConfig.PrintConnections(app.Logger);
+
 // ── Middleware pipeline ────────────────────────────────────────────────────
 
 // 1. Transport Security: HTTPS redirect + HSTS (SSTP-style)
