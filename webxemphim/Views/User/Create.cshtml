@@ -1,48 +1,90 @@
 @model webxemphim.Models.User
-
 @{
-    ViewData["Title"] = "Tạo User mới";
+    ViewData["Title"] = "Tao tai khoan moi";
 }
 
-<h1>Tạo User mới</h1>
+<style>
+.create-wrap { max-width: 520px; margin: 40px auto; }
+.create-card { background: #232533; border-radius: 14px; padding: 32px; border: 1px solid #333; }
+.create-title { font-size: 1.4rem; font-weight: bold; color: #ffd700; margin-bottom: 24px; }
+.form-group { margin-bottom: 18px; }
+.form-label { color: #aaa; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
+.form-control {
+    width: 100%; background: #1a1b2a; border: 1px solid #444; color: #fff;
+    border-radius: 8px; padding: 10px 12px; font-size: 0.95rem; outline: none;
+    box-sizing: border-box;
+}
+.form-control:focus { border-color: #ffd700; }
+select.form-control option { background: #232533; }
+.hint { color: #666; font-size: 0.75rem; margin-top: 4px; }
+.hint.req { color: #f39c12; }
+.btn-submit { background: #ffd700; color: #232533; border: none; padding: 11px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.95rem; }
+.btn-submit:hover { background: #ffed4e; }
+.btn-back { background: transparent; color: #aaa; border: 1px solid #555; padding: 11px 20px; border-radius: 8px; text-decoration: none; font-size: 0.95rem; margin-left: 10px; }
+.badge-role { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+.role-admin { background: #4a0000; color: #e74c3c; }
+.role-vip   { background: #4a3a00; color: #f39c12; }
+.role-user  { background: #1a2a4a; color: #3498db; }
+</style>
 
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            
-            <div class="form-group">
-                <label asp-for="UserName" class="control-label">Tên đăng nhập</label>
-                <input asp-for="UserName" class="form-control" />
-                <span asp-validation-for="UserName" class="text-danger"></span>
+<div class="create-wrap">
+    <div class="create-card">
+        <div class="create-title">
+            <i class="fas fa-user-plus"></i> Tao tai khoan moi
+        </div>
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div style="background:#4a0000;color:#e74c3c;padding:10px 14px;border-radius:8px;margin-bottom:16px;">
+                @TempData["ErrorMessage"]
             </div>
-            
+        }
+
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
             <div class="form-group">
-                <label asp-for="MK" class="control-label">Mật khẩu</label>
-                <input asp-for="MK" type="password" class="form-control" />
-                <span asp-validation-for="MK" class="text-danger"></span>
+                <label class="form-label">Ten hien thi</label>
+                <input asp-for="UserName" class="form-control" placeholder="Nguyen Van A" />
+                <span asp-validation-for="UserName" style="color:#e74c3c;font-size:0.8rem;"></span>
             </div>
-            
+
             <div class="form-group">
-                <label asp-for="EMAIL" class="control-label">Email</label>
-                <input asp-for="EMAIL" type="email" class="form-control" />
-                <span asp-validation-for="EMAIL" class="text-danger"></span>
+                <label class="form-label">Email</label>
+                <input asp-for="EMAIL" type="text" class="form-control" placeholder="email@example.com" />
+                <span asp-validation-for="EMAIL" style="color:#e74c3c;font-size:0.8rem;"></span>
             </div>
-            
+
             <div class="form-group">
-                <label asp-for="ROLE" class="control-label">Vai trò</label>
+                <label class="form-label">Mat khau</label>
+                <input asp-for="MK" type="password" class="form-control" placeholder="Mat khau manh" />
+                <div class="hint req">
+                    Yeu cau: 8+ ky tu, 1 chu hoa, 1 chu thuong, 1 so, 1 ky tu dac biet (!&#64;#$...)
+                </div>
+                <span asp-validation-for="MK" style="color:#e74c3c;font-size:0.8rem;"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Vai tro (Role)</label>
                 <select asp-for="ROLE" class="form-control">
-                    <option value="">Chọn vai trò</option>
+                    <option value="">-- Chon vai tro --</option>
                     <option value="Admin">Admin</option>
-                    <option value="User">User</option>
                     <option value="User VIP">User VIP</option>
+                    <option value="User">User</option>
                 </select>
-                <span asp-validation-for="ROLE" class="text-danger"></span>
+                <div class="hint" style="margin-top:6px;">
+                    <span class="badge-role role-admin">Admin</span> — quan ly toan he thong &nbsp;
+                    <span class="badge-role role-vip">User VIP</span> — xem phim VIP &nbsp;
+                    <span class="badge-role role-user">User</span> — nguoi dung thuong
+                </div>
+                <span asp-validation-for="ROLE" style="color:#e74c3c;font-size:0.8rem;"></span>
             </div>
-            
-            <div class="form-group mt-3">
-                <input type="submit" value="Tạo" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+
+            <div style="margin-top:24px;">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Tao tai khoan
+                </button>
+                <a asp-action="Index" class="btn-back">Huy</a>
             </div>
         </form>
     </div>
@@ -50,4 +92,4 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-} 
+}

@@ -90,23 +90,41 @@ namespace webxemphim.Controllers
         {
             if (!IsAdmin())
             {
-                TempData["ErrorMessage"] = "Bạn không có quyền truy cập trang này!";
+                TempData["ErrorMessage"] = "Ban khong co quyen truy cap trang nay!";
                 return RedirectToAction("Index", "Home");
             }
 
             if (ModelState.IsValid)
             {
-                // ── SECURITY: hash mật khẩu trước khi lưu (BCrypt work factor 12)
-                user.MK    = BCrypt.Net.BCrypt.HashPassword(user.MK, workFactor: 12);
-                user.EMAIL = user.EMAIL.Trim().ToLowerInvariant();
-                // ── SECURITY: mã hóa Phone/Address nếu có
+                // ── Password complexity check ──────────────────────────────
+                var pwErr = UserService.ValidatePassword(user.MK);
+                if (pwErr != null)
+                {
+                    ModelState.AddModelError("MK", pwErr);
+                    return View(user);
+                }
+
+                // ── Kiem tra email trung ───────────────────────────────────
+                var allUsers = await _context.Users.ToListAsync();
+                if (_userSvc.EmailExists(allUsers, user.EMAIL))
+                {
+                    ModelState.AddModelError("EMAIL", "Email nay da duoc su dung!");
+                    return View(user);
+                }
+
+                // ── Ma hoa truoc khi luu ──────────────────────────────────
+                user.MK      = BCrypt.Net.BCrypt.HashPassword(user.MK, workFactor: 12);
+                user.Balance = 0;
                 if (!string.IsNullOrEmpty(user.Phone))   user.Phone   = _enc.Encrypt(user.Phone.Trim());
                 if (!string.IsNullOrEmpty(user.Address)) user.Address = _enc.Encrypt(user.Address.Trim());
+                _userSvc.EncryptForSave(user); // ma hoa EMAIL + BalanceEncrypted
 
                 _context.Add(user);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("SECURITY: Admin tạo user mới. Email={Email}", user.EMAIL);
-                _secLog.LogRegister(user.UserName, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "admin");
+                _logger.LogInformation("SECURITY: Admin tao user moi. UserId={Id}", user.UserId);
+                _secLog.LogRegister(user.UserName, GetIp());
+                _audit.LogRegister(user.UserId, user.UserName, GetIp());
+                TempData["SuccessMessage"] = $"Da tao tai khoan {user.UserName} voi role {user.ROLE}!";
                 return RedirectToAction(nameof(Index));
             }
             return View(user);
