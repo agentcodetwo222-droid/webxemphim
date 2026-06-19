@@ -1,119 +1,248 @@
 using Microsoft.AspNetCore.Mvc;
 using webxemphim.Models;
+using webxemphim.Services;
 
 namespace webxemphim.Controllers
 {
     public class SecurityController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly IWebHostEnvironment  _env;
+        private readonly EncryptionService    _enc;
 
-        public SecurityController(ApplicationDbContext context, IWebHostEnvironment env)
+        public SecurityController(ApplicationDbContext context, IWebHostEnvironment env, EncryptionService enc)
         {
             _context = context;
             _env     = env;
+            _enc     = enc;
         }
 
+        // ── GET /Security ─────────────────────────────────────────────────────
         [HttpGet]
         public IActionResult Index()
         {
-            // Chỉ Admin mới được vào
-            var userRole = HttpContext.Session.GetString("UserRole");
-            if (userRole != "Admin")
+            if (HttpContext.Session.GetString("UserRole") != "Admin")
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền truy cập trang này!";
                 return RedirectToAction("Index", "Home");
             }
 
-            // ── Thu thập thông tin trạng thái bảo mật thực tế ────────────────
             var model = new SecurityStatusViewModel
             {
-                // Transport
-                IsHttps            = Request.IsHttps,
-                ForwardedProto     = Request.Headers["X-Forwarded-Proto"].ToString(),
-                Host               = Request.Host.ToString(),
-                Scheme             = Request.Scheme,
-
-                // Environment
-                Environment        = _env.EnvironmentName,
-                IsProduction       = _env.IsProduction(),
-
-                // Headers nhận được
-                HasHstsHeader      = Response.Headers.ContainsKey("Strict-Transport-Security"),
-                HasCspHeader       = Response.Headers.ContainsKey("Content-Security-Policy"),
-                HasXFrameHeader    = Response.Headers.ContainsKey("X-Frame-Options"),
-                HasNoSniffHeader   = Response.Headers.ContainsKey("X-Content-Type-Options"),
-                HasReferrerHeader  = Response.Headers.ContainsKey("Referrer-Policy"),
-                HasPermHeader      = Response.Headers.ContainsKey("Permissions-Policy"),
-                HasCoopHeader      = Response.Headers.ContainsKey("Cross-Origin-Opener-Policy"),
-                HasCorpHeader      = Response.Headers.ContainsKey("Cross-Origin-Resource-Policy"),
-
-                // Session
-                SessionId          = HttpContext.Session.Id,
-                SessionCookieName  = HttpContext.Request.Cookies.Keys
+                IsHttps           = Request.IsHttps,
+                ForwardedProto    = Request.Headers["X-Forwarded-Proto"].ToString(),
+                Host              = Request.Host.ToString(),
+                Scheme            = Request.Scheme,
+                Environment       = _env.EnvironmentName,
+                IsProduction      = _env.IsProduction(),
+                HasHstsHeader     = Response.Headers.ContainsKey("Strict-Transport-Security"),
+                HasCspHeader      = Response.Headers.ContainsKey("Content-Security-Policy"),
+                HasXFrameHeader   = Response.Headers.ContainsKey("X-Frame-Options"),
+                HasNoSniffHeader  = Response.Headers.ContainsKey("X-Content-Type-Options"),
+                HasReferrerHeader = Response.Headers.ContainsKey("Referrer-Policy"),
+                HasPermHeader     = Response.Headers.ContainsKey("Permissions-Policy"),
+                HasCoopHeader     = Response.Headers.ContainsKey("Cross-Origin-Opener-Policy"),
+                HasCorpHeader     = Response.Headers.ContainsKey("Cross-Origin-Resource-Policy"),
+                SessionId         = HttpContext.Session.Id,
+                SessionCookieName = HttpContext.Request.Cookies.Keys
                                         .FirstOrDefault(k => k.Contains("Session")) ?? "N/A",
-
-                // Database
-                DatabaseConnected  = CheckDatabase(),
-
-                // Request info
-                ClientIp           = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "N/A",
-                UserAgent          = Request.Headers["User-Agent"].ToString(),
-                CheckedAt          = DateTime.UtcNow,
+                DatabaseConnected = CheckDatabase(),
+                ClientIp          = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "N/A",
+                UserAgent         = Request.Headers["User-Agent"].ToString(),
+                CheckedAt         = DateTime.UtcNow,
             };
 
             return View(model);
         }
 
-        private bool CheckDatabase()
+        // ── GET /Security/Demo ────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult Demo()
         {
+            if (HttpContext.Session.GetString("UserRole") != "Admin")
+            {
+                TempData["ErrorMessage"] = "Bạn không có quyền truy cập trang này!";
+                return RedirectToAction("Index", "Home");
+            }
+            return View();
+        }
+
+        // ── POST /Security/Encrypt — mã hóa real-time ────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Encrypt([FromBody] EncryptRequest req)
+        {
+            if (HttpContext.Session.GetString("UserRole") != "Admin") return Forbid();
+            if (string.IsNullOrEmpty(req.Plaintext)) return BadRequest(new { error = "Plaintext trống" });
+
+            var sw        = System.Diagnostics.Stopwatch.StartNew();
+            var encrypted = _enc.Encrypt(req.Plaintext);
+            sw.Stop();
+
+            var raw    = Convert.FromBase64String(encrypted);
+            var nonce  = raw[..12];
+            var tag    = raw[12..28];
+            var cipher = raw[28..];
+
+            return Ok(new
+            {
+                plaintext    = req.Plaintext,
+                encrypted,
+                nonce_hex    = Convert.ToHexString(nonce),
+                nonce_b64    = Convert.ToBase64String(nonce),
+                tag_hex      = Convert.ToHexString(tag),
+                tag_b64      = Convert.ToBase64String(tag),
+                cipher_hex   = Convert.ToHexString(cipher),
+                cipher_b64   = Convert.ToBase64String(cipher),
+                input_bytes  = System.Text.Encoding.UTF8.GetByteCount(req.Plaintext),
+                output_bytes = raw.Length,
+                elapsed_ms   = Math.Round(sw.Elapsed.TotalMilliseconds, 3),
+                timestamp    = DateTime.UtcNow.ToString("HH:mm:ss.fff")
+            });
+        }
+
+        // ── POST /Security/Decrypt — giải mã real-time ───────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Decrypt([FromBody] DecryptRequest req)
+        {
+            if (HttpContext.Session.GetString("UserRole") != "Admin") return Forbid();
+            if (string.IsNullOrEmpty(req.Ciphertext)) return BadRequest(new { error = "Ciphertext trống" });
+
             try
             {
-                return _context.Database.CanConnect();
+                var sw        = System.Diagnostics.Stopwatch.StartNew();
+                var decrypted = _enc.Decrypt(req.Ciphertext);
+                sw.Stop();
+
+                return Ok(new
+                {
+                    decrypted,
+                    verified   = true,
+                    elapsed_ms = Math.Round(sw.Elapsed.TotalMilliseconds, 3),
+                    timestamp  = DateTime.UtcNow.ToString("HH:mm:ss.fff")
+                });
             }
             catch
             {
-                return false;
+                return Ok(new
+                {
+                    decrypted  = (string?)null,
+                    verified   = false,
+                    error      = "❌ Giải mã thất bại — dữ liệu bị sửa đổi hoặc sai key!"
+                });
             }
+        }
+
+        // ── POST /Security/SimulateToken — mô phỏng toàn bộ luồng ───────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SimulateToken([FromBody] EncryptRequest req)
+        {
+            if (HttpContext.Session.GetString("UserRole") != "Admin") return Forbid();
+
+            var plaintext = req.Plaintext ?? "test-data";
+            var steps     = new List<object>();
+
+            // Bước 1: Sinh Nonce ngẫu nhiên
+            var nonce = new byte[12];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(nonce);
+            steps.Add(new
+            {
+                step  = 1,
+                label = "Sinh Nonce ngẫu nhiên (96-bit)",
+                value = Convert.ToHexString(nonce),
+                note  = "Mỗi lần mã hóa dùng nonce khác nhau — tuyệt đối không tái dùng với AES-GCM"
+            });
+
+            // Bước 2: Chuyển plaintext → bytes
+            var inputBytes = System.Text.Encoding.UTF8.GetBytes(plaintext);
+            steps.Add(new
+            {
+                step  = 2,
+                label = "Chuyển Plaintext → UTF-8 Bytes",
+                value = Convert.ToHexString(inputBytes),
+                note  = $"{inputBytes.Length} bytes"
+            });
+
+            // Bước 3: Mã hóa AES-256-GCM
+            var encrypted = _enc.Encrypt(plaintext);
+            var raw       = Convert.FromBase64String(encrypted);
+            steps.Add(new
+            {
+                step  = 3,
+                label = "Mã hóa AES-256-GCM (Key 256-bit + Nonce)",
+                value = Convert.ToHexString(raw[28..]),
+                note  = $"Ciphertext {raw.Length - 28} bytes — không thể đọc nếu không có Key"
+            });
+
+            // Bước 4: Authentication Tag
+            var authTag = raw[12..28];
+            steps.Add(new
+            {
+                step  = 4,
+                label = "Tạo Authentication Tag (128-bit)",
+                value = Convert.ToHexString(authTag),
+                note  = "Tag xác thực toàn vẹn — sửa 1 bit trong DB thì tag không khớp, decrypt thất bại"
+            });
+
+            // Bước 5: Đóng gói lưu DB
+            steps.Add(new
+            {
+                step  = 5,
+                label = "Đóng gói → Base64 lưu Database",
+                value = encrypted,
+                note  = $"Nonce(12B) + Tag(16B) + Ciphertext({raw.Length - 28}B) = {raw.Length}B → Base64"
+            });
+
+            // Bước 6: Giải mã khi đọc
+            var decrypted = _enc.Decrypt(encrypted);
+            steps.Add(new
+            {
+                step  = 6,
+                label = "Giải mã khi đọc ra View",
+                value = decrypted,
+                note  = "Base64 → tách Nonce + Tag + Ciphertext → verify Tag → AES decrypt → UTF-8"
+            });
+
+            return Ok(new { steps, timestamp = DateTime.UtcNow.ToString("HH:mm:ss.fff") });
+        }
+
+        // ── Helper ────────────────────────────────────────────────────────────
+        private bool CheckDatabase()
+        {
+            try   { return _context.Database.CanConnect(); }
+            catch { return false; }
         }
     }
 
-    // ── ViewModel ─────────────────────────────────────────────────────────────
+    // ── ViewModels & Request Models ───────────────────────────────────────────
+    public class EncryptRequest { public string? Plaintext  { get; set; } }
+    public class DecryptRequest { public string? Ciphertext { get; set; } }
+
     public class SecurityStatusViewModel
     {
-        // Transport Security
         public bool   IsHttps           { get; set; }
         public string ForwardedProto    { get; set; } = "";
         public string Host              { get; set; } = "";
         public string Scheme            { get; set; } = "";
-
-        // Environment
         public string Environment       { get; set; } = "";
         public bool   IsProduction      { get; set; }
-
-        // Security Headers
-        public bool HasHstsHeader       { get; set; }
-        public bool HasCspHeader        { get; set; }
-        public bool HasXFrameHeader     { get; set; }
-        public bool HasNoSniffHeader    { get; set; }
-        public bool HasReferrerHeader   { get; set; }
-        public bool HasPermHeader       { get; set; }
-        public bool HasCoopHeader       { get; set; }
-        public bool HasCorpHeader       { get; set; }
-
-        // Session
+        public bool   HasHstsHeader     { get; set; }
+        public bool   HasCspHeader      { get; set; }
+        public bool   HasXFrameHeader   { get; set; }
+        public bool   HasNoSniffHeader  { get; set; }
+        public bool   HasReferrerHeader { get; set; }
+        public bool   HasPermHeader     { get; set; }
+        public bool   HasCoopHeader     { get; set; }
+        public bool   HasCorpHeader     { get; set; }
         public string SessionId         { get; set; } = "";
         public string SessionCookieName { get; set; } = "";
-
-        // Database
-        public bool DatabaseConnected   { get; set; }
-
-        // Request
+        public bool   DatabaseConnected { get; set; }
         public string ClientIp          { get; set; } = "";
         public string UserAgent         { get; set; } = "";
         public DateTime CheckedAt       { get; set; }
 
-        // Computed
         public bool TransportSecure =>
             IsHttps || ForwardedProto.Equals("https", StringComparison.OrdinalIgnoreCase);
 
@@ -121,17 +250,17 @@ namespace webxemphim.Controllers
         {
             get
             {
-                int score = 0;
-                if (TransportSecure)  score += 20;
-                if (HasCspHeader)     score += 15;
-                if (HasXFrameHeader)  score += 10;
-                if (HasNoSniffHeader) score += 10;
-                if (HasReferrerHeader)score += 10;
-                if (HasPermHeader)    score += 10;
-                if (HasCoopHeader)    score += 10;
-                if (HasCorpHeader)    score += 10;
-                if (DatabaseConnected)score += 5;
-                return score;
+                int s = 0;
+                if (TransportSecure)  s += 20;
+                if (HasCspHeader)     s += 15;
+                if (HasXFrameHeader)  s += 10;
+                if (HasNoSniffHeader) s += 10;
+                if (HasReferrerHeader)s += 10;
+                if (HasPermHeader)    s += 10;
+                if (HasCoopHeader)    s += 10;
+                if (HasCorpHeader)    s += 10;
+                if (DatabaseConnected)s += 5;
+                return s;
             }
         }
     }
