@@ -1,0 +1,260 @@
+@{
+    ViewData["Title"] = "Security Monitor";
+    var role = Context.Session.GetString("UserRole");
+    if (role != "Admin") { Context.Response.Redirect("/"); return; }
+}
+
+<style>
+.mon { max-width: 1400px; margin: 0 auto; padding: 24px 16px; }
+.mon-title { font-size: 1.6rem; font-weight: bold; color: #2ecc71; margin-bottom: 4px; }
+.mon-sub   { color: #aaa; font-size: 0.85rem; margin-bottom: 20px; }
+.live-dot  { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71;
+             display: inline-block; animation: pulse 1.2s infinite; margin-right: 6px; }
+@@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.3)} }
+
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+@@media(max-width:900px){ .stats-row { grid-template-columns: repeat(2,1fr); } }
+.stat-card { background: #232533; border-radius: 10px; padding: 14px 18px; border: 1px solid #333; text-align: center; }
+.stat-num  { font-size: 2rem; font-weight: bold; line-height: 1; }
+.stat-lbl  { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
+
+.panels    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@@media(max-width:1024px){ .panels { grid-template-columns: 1fr; } }
+.panel     { background: #232533; border-radius: 12px; border: 1px solid #333; overflow: hidden; }
+.panel-hdr { display: flex; align-items: center; justify-content: space-between;
+             padding: 12px 16px; border-bottom: 1px solid #333; font-weight: bold; font-size: 0.9rem; }
+.panel-body{ height: 280px; overflow-y: auto; padding: 0; }
+.panel-body::-webkit-scrollbar { width: 4px; }
+.panel-body::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+.log-row   { display: flex; gap: 8px; padding: 7px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+             font-size: 0.78rem; align-items: flex-start; animation: fadeIn .4s; }
+@@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.log-time  { color: #666; flex-shrink: 0; font-family: monospace; width: 58px; }
+.log-badge { border-radius: 4px; padding: 1px 6px; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; white-space: nowrap; }
+.log-msg   { flex: 1; color: #ddd; }
+.log-det   { color: #888; font-size: 0.72rem; word-break: break-all; }
+
+.SUCCESS { background:#1a472a; color:#2ecc71; }
+.WARNING { background:#4a2e00; color:#f39c12; }
+.DANGER  { background:#4a0000; color:#e74c3c; }
+.CRYPTO  { background:#1a2a4a; color:#3498db; }
+.FINANCE { background:#2a1a4a; color:#9b59b6; }
+.SECURITY{ background:#1a3a2a; color:#1abc9c; }
+.INFO    { background:#1a1a2a; color:#95a5a6; }
+
+.full-panel { grid-column: 1 / -1; }
+.cnt-badge  { background:#333; color:#aaa; border-radius: 8px; padding: 1px 8px; font-size: 0.75rem; }
+.paused-btn { background: #333; border: 1px solid #555; color: #fff; border-radius: 6px;
+              padding: 3px 10px; font-size: 0.75rem; cursor: pointer; }
+.paused-btn.on { background:#4a2e00; color:#f39c12; border-color:#f39c12; }
+</style>
+
+<div class="mon">
+    <div class="mon-title">
+        <span class="live-dot"></span> Security Monitor Real-time
+    </div>
+    <div class="mon-sub">
+        Tu dong cap nhat moi 2 giay &mdash; Ghi lai toan bo su kien bao mat / ma hoa / nguoi dung &middot; Chi Admin
+    </div>
+
+    @* ── Stats ── *@
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-num" id="s-login" style="color:#2ecc71">0</div>
+            <div class="stat-lbl">Dang nhap OK</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" id="s-fail" style="color:#e74c3c">0</div>
+            <div class="stat-lbl">Dang nhap that bai</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" id="s-crypto" style="color:#3498db">0</div>
+            <div class="stat-lbl">Ma hoa / Giai ma</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" id="s-finance" style="color:#9b59b6">0</div>
+            <div class="stat-lbl">Giao dich tai chinh</div>
+        </div>
+    </div>
+
+    @* ── Panels ── *@
+    <div class="panels">
+
+        @* Panel 1: Activity Log *@
+        <div class="panel">
+            <div class="panel-hdr" style="color:#2ecc71;">
+                <span><i class="fas fa-stream"></i> Activity Log</span>
+                <span>
+                    <span class="cnt-badge" id="cnt-all">0</span>
+                    <button class="paused-btn" id="btn-pause" onclick="togglePause()">Pause</button>
+                </span>
+            </div>
+            <div class="panel-body" id="feed-all"></div>
+        </div>
+
+        @* Panel 2: Security Events *@
+        <div class="panel">
+            <div class="panel-hdr" style="color:#e74c3c;">
+                <span><i class="fas fa-exclamation-triangle"></i> Security Events</span>
+                <span class="cnt-badge" id="cnt-sec">0</span>
+            </div>
+            <div class="panel-body" id="feed-sec"></div>
+        </div>
+
+        @* Panel 3: Encryption Events *@
+        <div class="panel">
+            <div class="panel-hdr" style="color:#3498db;">
+                <span><i class="fas fa-lock"></i> Encryption / Decryption Events</span>
+                <span class="cnt-badge" id="cnt-cry">0</span>
+            </div>
+            <div class="panel-body" id="feed-cry"></div>
+        </div>
+
+        @* Panel 4: Finance Events *@
+        <div class="panel">
+            <div class="panel-hdr" style="color:#9b59b6;">
+                <span><i class="fas fa-wallet"></i> Finance Events</span>
+                <span class="cnt-badge" id="cnt-fin">0</span>
+            </div>
+            <div class="panel-body" id="feed-fin"></div>
+        </div>
+
+        @* Panel 5: SSTP Flow Diagram *@
+        <div class="panel full-panel">
+            <div class="panel-hdr" style="color:#ffd700;">
+                <span><i class="fas fa-project-diagram"></i> Luong hoat dong SSTP / AES-256-GCM (cap nhat khi co su kien ma hoa moi)</span>
+                <span id="flow-time" style="color:#666;font-size:0.75rem;"></span>
+            </div>
+            <div style="padding:16px;" id="flow-content">
+                <div style="color:#555;text-align:center;padding:32px;">
+                    Cho su kien ma hoa tu nguoi dung... Hay de nguoi dung dang nhap hoac thuc hien giao dich.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div style="text-align:right;margin-top:12px;color:#555;font-size:0.8rem;">
+        Server time: <span id="srv-time">--:--:--</span> UTC
+        &nbsp;|&nbsp;
+        <a href="/Security" style="color:#aaa;">&larr; Test SSTP</a>
+        &nbsp;|&nbsp;
+        <a href="/" style="color:#aaa;">&larr; Trang chu</a>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let paused    = false;
+let lastId    = 0;
+const colors  = {SUCCESS:'#2ecc71',WARNING:'#f39c12',DANGER:'#e74c3c',CRYPTO:'#3498db',FINANCE:'#9b59b6',SECURITY:'#1abc9c',INFO:'#95a5a6'};
+
+function togglePause() {
+    paused = !paused;
+    const btn = document.getElementById('btn-pause');
+    btn.textContent = paused ? 'Resume' : 'Pause';
+    btn.className   = paused ? 'paused-btn on' : 'paused-btn';
+}
+
+function row(e) {
+    return '<div class="log-row">'
+        + '<span class="log-time">' + e.time + '</span>'
+        + '<span class="log-badge ' + e.level + '">' + e.category + '</span>'
+        + '<div style="flex:1"><div class="log-msg">' + e.message
+        + (e.userName && e.userName !== 'System' ? ' <span style="color:#666">| ' + e.userName + '</span>' : '')
+        + (e.ipAddress && e.ipAddress !== 'internal' && e.ipAddress !== 'unknown' ? ' <span style="color:#444">IP:' + e.ipAddress + '</span>' : '')
+        + '</div>'
+        + (e.detail ? '<div class="log-det">' + e.detail + '</div>' : '')
+        + '</div></div>';
+}
+
+function prepend(id, html) {
+    const el = document.getElementById(id);
+    el.insertAdjacentHTML('afterbegin', html);
+    // Giu toi da 80 dong moi panel
+    while (el.children.length > 80) el.removeChild(el.lastChild);
+}
+
+function updateStats(stats) {
+    document.getElementById('s-login').textContent   = (stats.LOGIN_OK || 0);
+    document.getElementById('s-fail').textContent    = (stats.LOGIN_FAIL || 0) + (stats.LOCKOUT || 0);
+    document.getElementById('s-crypto').textContent  = (stats.ENCRYPT || 0) + (stats.DECRYPT || 0);
+    document.getElementById('s-finance').textContent = (stats.DEPOSIT || 0) + (stats.BUY_VIP || 0);
+}
+
+function updateFlow(events) {
+    const enc = events.filter(e => e.category === 'ENCRYPT' || e.category === 'DECRYPT');
+    if (!enc.length) return;
+    const last = enc[0];
+    const steps = [
+        { n:1, lbl:'Du lieu dau vao', val: last.message, color:'#ffd700' },
+        { n:2, lbl:'Sinh Nonce ngau nhien (96-bit)', val:'AES-GCM: RandomNumberGenerator.Fill(nonce[12])', color:'#3498db' },
+        { n:3, lbl:'Ma hoa AES-256-GCM', val:'Key(256-bit) + Nonce(96-bit) --> Ciphertext + Auth Tag(128-bit)', color:'#e74c3c' },
+        { n:4, lbl:'Dong goi Base64', val:'Nonce[12] + Tag[16] + Cipher[n] --> Base64 string', color:'#9b59b6' },
+        { n:5, lbl:'Luu Database', val: last.detail, color:'#2ecc71' },
+    ];
+    let html = '<div style="display:flex;gap:0;align-items:stretch;">';
+    for (const s of steps) {
+        html += '<div style="flex:1;background:#1a1b2a;border:1px solid ' + s.color + ';border-radius:8px;margin:4px;padding:10px 8px;text-align:center;">'
+             +  '<div style="background:' + s.color + ';color:#000;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem;margin:0 auto 8px;">' + s.n + '</div>'
+             +  '<div style="font-weight:bold;color:#fff;font-size:0.78rem;margin-bottom:6px;">' + s.lbl + '</div>'
+             +  '<div style="font-family:monospace;font-size:0.7rem;color:' + s.color + ';word-break:break-all;">' + s.val + '</div>'
+             +  '</div>';
+    }
+    html += '</div>';
+    document.getElementById('flow-content').innerHTML = html;
+    document.getElementById('flow-time').textContent  = 'Cap nhat: ' + last.time + ' UTC';
+}
+
+async function poll() {
+    try {
+        const r = await fetch('/Security/LiveFeed?count=80');
+        if (!r.ok) return;
+        const d = await r.json();
+
+        document.getElementById('srv-time').textContent = d.serverTime;
+        updateStats(d.stats);
+
+        if (paused) return;
+
+        // Chi hien thi ban ghi moi hon lastId
+        const newEvts = d.events.filter(e => e.id > lastId);
+        if (!newEvts.length) return;
+        lastId = Math.max(...d.events.map(e => e.id));
+
+        // All
+        const allHtml = newEvts.map(row).join('');
+        prepend('feed-all', allHtml);
+        document.getElementById('cnt-all').textContent = d.total;
+
+        // Security (LOGIN_FAIL, LOCKOUT, RATE_LIMIT, CSRF_TOKEN)
+        const secEvts = newEvts.filter(e => ['LOGIN_FAIL','LOCKOUT','RATE_LIMIT','CSRF_TOKEN'].includes(e.category));
+        if (secEvts.length) {
+            prepend('feed-sec', secEvts.map(row).join(''));
+            document.getElementById('cnt-sec').textContent = d.stats.LOGIN_FAIL + (d.stats.LOCKOUT || 0);
+        }
+
+        // Crypto
+        const cryEvts = newEvts.filter(e => ['ENCRYPT','DECRYPT'].includes(e.category));
+        if (cryEvts.length) {
+            prepend('feed-cry', cryEvts.map(row).join(''));
+            document.getElementById('cnt-cry').textContent = (d.stats.ENCRYPT || 0) + (d.stats.DECRYPT || 0);
+            updateFlow(d.events);
+        }
+
+        // Finance
+        const finEvts = newEvts.filter(e => ['DEPOSIT','BUY_VIP'].includes(e.category));
+        if (finEvts.length) {
+            prepend('feed-fin', finEvts.map(row).join(''));
+            document.getElementById('cnt-fin').textContent = (d.stats.DEPOSIT || 0) + (d.stats.BUY_VIP || 0);
+        }
+
+    } catch(e) { /* silent */ }
+}
+
+// Poll ngay lap tuc, sau do moi 2 giay
+poll();
+setInterval(poll, 2000);
+</script>
+}

@@ -18,6 +18,9 @@ builder.Services.AddSecurityServices(builder.Configuration, builder.Environment)
 // ── SECURITY: Encryption Service (AES-256-GCM) ────────────────────────────
 builder.Services.AddSingleton<EncryptionService>();
 
+// ── SECURITY: Real-time Security Log (Singleton in-memory) ────────────────
+builder.Services.AddSingleton<webxemphim.Services.SecurityLogService>();
+
 // ── Database ───────────────────────────────────────────────────────────────
 // Railway inject DATABASE_URL dạng: postgresql://user:pass@host:port/dbname
 // Ưu tiên: DATABASE_URL (Railway) → DefaultConnection (local user-secrets)

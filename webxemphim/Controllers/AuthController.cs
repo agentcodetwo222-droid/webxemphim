@@ -2,24 +2,27 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using webxemphim.Models;
 using webxemphim.Services;
+
 namespace webxemphim.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext    _context;
         private readonly ILogger<AuthController> _logger;
-        private readonly EncryptionService _enc;
+        private readonly EncryptionService       _enc;
+        private readonly SecurityLogService      _secLog;
 
-        // ── SECURITY: giới hạn số lần đăng nhập sai (in-memory)
         private static readonly Dictionary<string, (int Count, DateTime LastAttempt)> _loginAttempts = new();
         private const int MaxLoginAttempts = 5;
         private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
-        public AuthController(ApplicationDbContext context, ILogger<AuthController> logger, EncryptionService enc)
+        public AuthController(ApplicationDbContext context, ILogger<AuthController> logger,
+                              EncryptionService enc, SecurityLogService secLog)
         {
             _context = context;
             _logger  = logger;
             _enc     = enc;
+            _secLog  = secLog;
         }
 
         // GET: Auth/Login
@@ -42,6 +45,7 @@ namespace webxemphim.Controllers
             if (IsLockedOut(clientKey))
             {
                 _logger.LogWarning("SECURITY: Lockout. Key={Key}", clientKey);
+                _secLog.LogLockout(normalizedIdentifier, GetClientIp());
                 TempData["ErrorMessage"] = $"Tài khoản bị khóa tạm thời do đăng nhập sai quá {MaxLoginAttempts} lần. Thử lại sau {LockoutDuration.TotalMinutes} phút.";
                 return View();
             }
@@ -57,6 +61,7 @@ namespace webxemphim.Controllers
             {
                 RecordFailedAttempt(clientKey);
                 _logger.LogWarning("SECURITY: Login failed. Identifier={Id} IP={IP}", normalizedIdentifier, GetClientIp());
+                _secLog.LogLogin(normalizedIdentifier, "", GetClientIp(), false);
                 TempData["ErrorMessage"] = "Tên đăng nhập / email hoặc mật khẩu không đúng!";
                 return View();
             }
@@ -68,6 +73,7 @@ namespace webxemphim.Controllers
             HttpContext.Session.SetString("UserRole", user.ROLE);
 
             _logger.LogInformation("SECURITY: Login OK. UserId={Id} Role={Role}", user.UserId, user.ROLE);
+            _secLog.LogLogin(user.UserName, user.ROLE, GetClientIp(), true);
             TempData["SuccessMessage"] = "Đăng nhập thành công!";
             return RedirectToAction("Index", "Home");
         }
@@ -126,6 +132,7 @@ namespace webxemphim.Controllers
                 _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("SECURITY: New account created. Email={Email}", normalizedEmail);
+                _secLog.LogRegister(newUser.UserName, GetClientIp());
                 TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng đăng nhập.";
                 return RedirectToAction("Login");
             }
@@ -140,7 +147,9 @@ namespace webxemphim.Controllers
         // GET: Auth/Logout
         public IActionResult Logout()
         {
+            var userName = HttpContext.Session.GetString("UserName") ?? "?";
             _logger.LogInformation("SECURITY: Logout. UserId={Id}", HttpContext.Session.GetString("UserId") ?? "?");
+            _secLog.LogLogout(userName, GetClientIp());
             HttpContext.Session.Clear();
             TempData["SuccessMessage"] = "Đã đăng xuất thành công!";
             return RedirectToAction("Index", "Home");

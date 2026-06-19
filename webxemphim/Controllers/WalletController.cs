@@ -8,12 +8,14 @@ namespace webxemphim.Controllers
     public class WalletController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly EncryptionService _enc;
+        private readonly EncryptionService    _enc;
+        private readonly SecurityLogService   _secLog;
 
-        public WalletController(ApplicationDbContext context, EncryptionService enc)
+        public WalletController(ApplicationDbContext context, EncryptionService enc, SecurityLogService secLog)
         {
             _context = context;
             _enc     = enc;
+            _secLog  = secLog;
         }
 
         public async Task<IActionResult> Index()
@@ -128,6 +130,9 @@ namespace webxemphim.Controllers
                 _context.Transactions.Add(transaction);
                 await _context.SaveChangesAsync();
 
+                _secLog.LogDeposit(user.UserName, amount.ToString("N0"), currencyCode,
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
                 TempData["SuccessMessage"] = $"Nạp tiền thành công! {amount:N2} {currency.Symbol} = {amountInVND:N0} VNĐ";
                 return RedirectToAction("Index");
             }
@@ -214,6 +219,9 @@ namespace webxemphim.Controllers
 
                 _context.Transactions.Add(transaction);
                 await _context.SaveChangesAsync();
+
+                _secLog.LogBuyVIP(user.UserName, package,
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
                 TempData["SuccessMessage"] = $"Mua VIP thành công! {description} - Hết hạn: {user.VIPExpiryDate.Value:dd/MM/yyyy}";
                 return RedirectToAction("Index");

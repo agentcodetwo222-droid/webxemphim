@@ -9,12 +9,15 @@ namespace webxemphim.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment  _env;
         private readonly EncryptionService    _enc;
+        private readonly SecurityLogService   _secLog;
 
-        public SecurityController(ApplicationDbContext context, IWebHostEnvironment env, EncryptionService enc)
+        public SecurityController(ApplicationDbContext context, IWebHostEnvironment env,
+                                  EncryptionService enc, SecurityLogService secLog)
         {
             _context = context;
             _env     = env;
             _enc     = enc;
+            _secLog  = secLog;
         }
 
         // ── GET /Security ─────────────────────────────────────────────────────
@@ -206,6 +209,47 @@ namespace webxemphim.Controllers
             });
 
             return Ok(new { steps, timestamp = DateTime.UtcNow.ToString("HH:mm:ss.fff") });
+        }
+
+        // ── GET /Security/Monitor ─────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult Monitor()
+        {
+            if (HttpContext.Session.GetString("UserRole") != "Admin")
+            {
+                TempData["ErrorMessage"] = "Ban khong co quyen truy cap trang nay!";
+                return RedirectToAction("Index", "Home");
+            }
+            return View();
+        }
+
+        // ── GET /Security/LiveFeed — polling API tra JSON ──────────────────────
+        [HttpGet]
+        public IActionResult LiveFeed(string? category = null, int count = 60)
+        {
+            if (HttpContext.Session.GetString("UserRole") != "Admin")
+                return Forbid();
+
+            var events = _secLog.GetLatest(count, category)
+                .Select(e => new
+                {
+                    e.Id,
+                    time     = e.Timestamp.ToString("HH:mm:ss"),
+                    e.Category,
+                    e.Level,
+                    e.Message,
+                    e.UserName,
+                    e.IpAddress,
+                    e.Detail
+                });
+
+            return Ok(new
+            {
+                events,
+                stats = _secLog.GetStats(),
+                total = _secLog.TotalCount,
+                serverTime = DateTime.UtcNow.ToString("HH:mm:ss")
+            });
         }
 
         // ── Helper ────────────────────────────────────────────────────────────
