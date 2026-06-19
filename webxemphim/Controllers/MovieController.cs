@@ -101,6 +101,8 @@ namespace webxemphim.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(600 * 1024 * 1024)] // 600MB cho video lớn
+        [RequestFormLimits(MultipartBodyLengthLimit = 600 * 1024 * 1024)]
         public async Task<IActionResult> Create([Bind("Title,Description,Genre,Country,Year,ImageUrl,VideoUrl,IsVipOnly,IsAvailable,CategoryName")] Movie movie,
             IFormFile? imageFile, IFormFile? videoFile, string? imageType, string? videoType)
         {
@@ -113,97 +115,100 @@ namespace webxemphim.Controllers
                     return RedirectToAction("Index");
                 }
 
+                // ── Bỏ qua ModelState error cho ImageUrl/VideoUrl khi dùng file upload ──
+                if (imageType == "file") ModelState.Remove("ImageUrl");
+                if (videoType == "file") ModelState.Remove("VideoUrl");
+
+                // ── Xử lý ảnh ──────────────────────────────────────────────────────────
                 if (imageType == "file" && imageFile != null && imageFile.Length > 0)
                 {
                     if (imageFile.Length > 5 * 1024 * 1024)
                     {
                         TempData["ErrorMessage"] = "Hình ảnh không được vượt quá 5MB!";
-                        ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+                        ViewBag.Categories = await GetCategories();
                         return View(movie);
                     }
 
-                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                    var fileExtension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
-                    if (!allowedExtensions.Contains(fileExtension))
+                    var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    if (!new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" }.Contains(ext))
                     {
-                        TempData["ErrorMessage"] = "Chỉ chấp nhận file hình ảnh: JPG, PNG, GIF!";
-                        ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+                        TempData["ErrorMessage"] = "Chỉ chấp nhận JPG, PNG, GIF, WEBP!";
+                        ViewBag.Categories = await GetCategories();
                         return View(movie);
                     }
 
-                    var imageFileName = Guid.NewGuid().ToString() + fileExtension;
-                    var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images");
-                    if (!Directory.Exists(imagePath)) Directory.CreateDirectory(imagePath);
-
-                    var imageFilePath = Path.Combine(imagePath, imageFileName);
-                    using (var stream = new FileStream(imageFilePath, FileMode.Create))
-                    {
-                        await imageFile.CopyToAsync(stream);
-                    }
-
-                    movie.ImageUrl = _enc.Encrypt("/uploads/images/" + imageFileName);
+                    var imgDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images");
+                    Directory.CreateDirectory(imgDir); // tao neu chua co
+                    var imgFile = Guid.NewGuid() + ext;
+                    using var s = new FileStream(Path.Combine(imgDir, imgFile), FileMode.Create);
+                    await imageFile.CopyToAsync(s);
+                    // Fix lỗi 2: đánh dấu đã encrypt bằng flag riêng thay vì StartsWith check
+                    movie.ImageUrl = _enc.Encrypt("/uploads/images/" + imgFile);
+                    imageType = "already_encrypted"; // đánh dấu không encrypt thêm
                 }
 
+                // ── Xử lý video ──────────────────────────────────────────────────────────
                 if (videoType == "file" && videoFile != null && videoFile.Length > 0)
                 {
                     if (videoFile.Length > 500 * 1024 * 1024)
                     {
                         TempData["ErrorMessage"] = "Video không được vượt quá 500MB!";
-                        ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+                        ViewBag.Categories = await GetCategories();
                         return View(movie);
                     }
 
-                    var allowedExtensions = new[] { ".mp4", ".avi", ".mov", ".mkv", ".wmv", ".flv" };
-                    var fileExtension = Path.GetExtension(videoFile.FileName).ToLowerInvariant();
-                    if (!allowedExtensions.Contains(fileExtension))
+                    var ext = Path.GetExtension(videoFile.FileName).ToLowerInvariant();
+                    if (!new[] { ".mp4", ".avi", ".mov", ".mkv", ".wmv", ".flv" }.Contains(ext))
                     {
-                        TempData["ErrorMessage"] = "Chỉ chấp nhận file video: MP4, AVI, MOV, MKV, WMV, FLV!";
-                        ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+                        TempData["ErrorMessage"] = "Chỉ chấp nhận MP4, AVI, MOV, MKV, WMV, FLV!";
+                        ViewBag.Categories = await GetCategories();
                         return View(movie);
                     }
 
-                    var videoFileName = Guid.NewGuid().ToString() + fileExtension;
-                    var videoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "videos");
-                    if (!Directory.Exists(videoPath)) Directory.CreateDirectory(videoPath);
-
-                    var videoFilePath = Path.Combine(videoPath, videoFileName);
-                    using (var stream = new FileStream(videoFilePath, FileMode.Create))
-                    {
-                        await videoFile.CopyToAsync(stream);
-                    }
-
-                    movie.VideoUrl = _enc.Encrypt("/uploads/videos/" + videoFileName);
+                    var vidDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "videos");
+                    Directory.CreateDirectory(vidDir); // tao neu chua co
+                    var vidFile = Guid.NewGuid() + ext;
+                    using var s = new FileStream(Path.Combine(vidDir, vidFile), FileMode.Create);
+                    await videoFile.CopyToAsync(s);
+                    movie.VideoUrl = _enc.Encrypt("/uploads/videos/" + vidFile);
+                    videoType = "already_encrypted"; // đánh dấu không encrypt thêm
                 }
 
+                // ── Kiểm tra ModelState sau khi xử lý file ──────────────────────────────
                 if (!ModelState.IsValid)
                 {
-                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                    TempData["ErrorMessage"] = $"Lỗi validation: {string.Join(", ", errors)}";
-                    ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage);
+                    TempData["ErrorMessage"] = $"Thiếu thông tin: {string.Join(", ", errors)}";
+                    ViewBag.Categories = await GetCategories();
                     return View(movie);
                 }
 
-                // ── SECURITY: mã hóa ImageUrl/VideoUrl nếu là URL thủ công (không phải upload)
-                if (!movie.ImageUrl.StartsWith("AQID") && !string.IsNullOrEmpty(movie.ImageUrl))
+                // ── Fix lỗi 2: Chỉ encrypt URL thủ công, KHÔNG encrypt nếu đã upload file ──
+                if (imageType != "already_encrypted" && !string.IsNullOrEmpty(movie.ImageUrl))
                     movie.ImageUrl = _enc.Encrypt(movie.ImageUrl);
-                if (!movie.VideoUrl.StartsWith("AQID") && !string.IsNullOrEmpty(movie.VideoUrl))
+
+                if (videoType != "already_encrypted" && !string.IsNullOrEmpty(movie.VideoUrl))
                     movie.VideoUrl = _enc.Encrypt(movie.VideoUrl);
 
                 _context.Add(movie);
                 await _context.SaveChangesAsync();
-                _secLog.LogEncrypt("Movie.ImageUrl + VideoUrl", movie.Title,
-                    "Base64(Nonce+Tag+Cipher)", 0);
+                _secLog.LogEncrypt("Movie.ImageUrl + VideoUrl", movie.Title, "AES-256-GCM", 0);
                 TempData["SuccessMessage"] = "Thêm phim thành công!";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Lỗi khi tạo phim: {ex.Message}";
-                ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+                ViewBag.Categories = await GetCategories();
             }
 
             return View(movie);
         }
+
+        private Task<List<Category>> GetCategories()
+            => _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
 
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
@@ -241,11 +246,26 @@ namespace webxemphim.Controllers
             {
                 try
                 {
-                    // ── SECURITY: mã hóa ImageUrl/VideoUrl trước khi lưu
-                    if (!string.IsNullOrEmpty(movie.ImageUrl))
-                        movie.ImageUrl = _enc.Encrypt(movie.ImageUrl);
-                    if (!string.IsNullOrEmpty(movie.VideoUrl))
-                        movie.VideoUrl = _enc.Encrypt(movie.VideoUrl);
+                    // Giai ma URL hien tai truoc khi encrypt lai
+                    // (tranh encrypt nhieu lan neu admin sua ma khong doi URL)
+                    var existing = await _context.Movies.AsNoTracking().FirstOrDefaultAsync(m => m.MovieId == id);
+                    if (existing != null)
+                    {
+                        var oldImage = _enc.Decrypt(existing.ImageUrl ?? "");
+                        var oldVideo = _enc.Decrypt(existing.VideoUrl ?? "");
+                        // Chi encrypt neu admin nhap URL moi (khac URL cu da giai ma)
+                        movie.ImageUrl = (movie.ImageUrl == oldImage)
+                            ? existing.ImageUrl!
+                            : _enc.Encrypt(movie.ImageUrl ?? "");
+                        movie.VideoUrl = (movie.VideoUrl == oldVideo)
+                            ? existing.VideoUrl!
+                            : _enc.Encrypt(movie.VideoUrl ?? "");
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(movie.ImageUrl)) movie.ImageUrl = _enc.Encrypt(movie.ImageUrl);
+                        if (!string.IsNullOrEmpty(movie.VideoUrl)) movie.VideoUrl = _enc.Encrypt(movie.VideoUrl);
+                    }
 
                     _context.Update(movie);
                     await _context.SaveChangesAsync();

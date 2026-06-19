@@ -5,6 +5,17 @@ using webxemphim.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Fix: Request size limit cho upload video lớn ──────────────────────────
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 600 * 1024 * 1024; // 600MB
+});
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 600 * 1024 * 1024; // 600MB
+    options.ValueLengthLimit         = int.MaxValue;
+});
+
 // ── MVC + Razor Pages ──────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews(options =>
 {
@@ -60,6 +71,16 @@ app.UseRateLimiter();
 
 // 4. Static files, routing, session, authorization
 app.UseStaticFiles();
+
+// ── Fix lỗi 4: Serve thư mục uploads (tạo nếu chưa có) ──────────────────
+var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "uploads");
+Directory.CreateDirectory(Path.Combine(uploadsPath, "images"));
+Directory.CreateDirectory(Path.Combine(uploadsPath, "videos"));
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath  = "/uploads"
+});
 app.UseRouting();
 app.UseSession();
 
