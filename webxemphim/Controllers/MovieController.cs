@@ -344,7 +344,19 @@ namespace webxemphim.Controllers
 
             ViewBag.UserRole = userRole;
             ViewBag.Movie = movie;
-            return View(DecryptMovie(movie));
+
+            // Log giai ma VideoUrl de hien thi trong Monitor
+            var decrypted = DecryptMovie(movie);
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            sw.Stop();
+            _secLog.LogVideoDecrypt(
+                movie.Title, ip,
+                movie.VideoUrl ?? "",
+                decrypted.VideoUrl ?? "",
+                sw.Elapsed.TotalMilliseconds);
+
+            return View(decrypted);
         }
 
         [HttpGet]

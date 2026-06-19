@@ -146,6 +146,107 @@ namespace webxemphim.Services
             });
         }
 
+        // ── Chi tiet ma hoa theo tung hanh dong ──────────────────────────────
+
+        /// <summary>Log khi user dang nhap — hien thi qua trinh BCrypt</summary>
+        public void LogLoginEncryption(string userName, string ip, bool success,
+                                       string bcryptHash, double ms)
+        {
+            Add(new SecurityEvent
+            {
+                Category  = "AUTH_CRYPTO",
+                Level     = "CRYPTO",
+                Message   = $"BCrypt verify: {userName}",
+                UserName  = userName,
+                IpAddress = ip,
+                Detail    = success
+                    ? $"BCrypt(workFactor=12) MATCH | Hash: {bcryptHash[..20]}... | {ms:F1}ms | " +
+                      $"Tailscale: {IsTailscale(ip)}"
+                    : $"BCrypt(workFactor=12) NO MATCH | {ms:F1}ms"
+            });
+        }
+
+        /// <summary>Log khi dang ky — hien thi toan bo ma hoa</summary>
+        public void LogRegisterEncryption(string userName, string ip,
+                                          string emailCipher, string balanceCipher)
+        {
+            Add(new SecurityEvent
+            {
+                Category  = "REGISTER_CRYPTO",
+                Level     = "CRYPTO",
+                Message   = $"Ma hoa dang ky: {userName}",
+                UserName  = userName,
+                IpAddress = ip,
+                Detail    = $"Password: BCrypt(12 rounds) | " +
+                            $"Email: AES-GCM→{emailCipher[..Math.Min(16, emailCipher.Length)]}... | " +
+                            $"Balance: AES-GCM→{balanceCipher[..Math.Min(16, balanceCipher.Length)]}... | " +
+                            $"Tailscale: {IsTailscale(ip)}"
+            });
+        }
+
+        /// <summary>Log khi xem phim — hien thi giai ma VideoUrl</summary>
+        public void LogVideoDecrypt(string movieTitle, string ip,
+                                    string cipherPreview, string urlPreview, double ms)
+        {
+            Add(new SecurityEvent
+            {
+                Category  = "VIDEO_CRYPTO",
+                Level     = "CRYPTO",
+                Message   = $"Giai ma VideoUrl: {movieTitle}",
+                UserName  = "System",
+                IpAddress = ip,
+                Detail    = $"AES-256-GCM decrypt | " +
+                            $"Cipher: {cipherPreview[..Math.Min(16, cipherPreview.Length)]}... | " +
+                            $"URL: {urlPreview} | {ms:F1}ms | " +
+                            $"Tailscale: {IsTailscale(ip)}"
+            });
+        }
+
+        /// <summary>Log khi nap tien — hien thi ma hoa so lieu tai chinh</summary>
+        public void LogDepositEncryption(string userName, string ip,
+                                         decimal amount, string amountCipher,
+                                         string currencyCipher)
+        {
+            Add(new SecurityEvent
+            {
+                Category  = "DEPOSIT_CRYPTO",
+                Level     = "CRYPTO",
+                Message   = $"Ma hoa giao dich: {userName}",
+                UserName  = userName,
+                IpAddress = ip,
+                Detail    = $"Amount {amount:N0} VND → AES-GCM: {amountCipher[..Math.Min(16,amountCipher.Length)]}... | " +
+                            $"Currency → AES-GCM: {currencyCipher[..Math.Min(16,currencyCipher.Length)]}... | " +
+                            $"Tailscale: {IsTailscale(ip)}"
+            });
+        }
+
+        /// <summary>Log session token sau dang nhap</summary>
+        public void LogSessionToken(string userName, string ip,
+                                    string sessionId, string role)
+        {
+            Add(new SecurityEvent
+            {
+                Category  = "SESSION_TOKEN",
+                Level     = "SECURITY",
+                Message   = $"Session tao: {userName}",
+                UserName  = userName,
+                IpAddress = ip,
+                Detail    = $"SessionId: {sessionId[..Math.Min(12, sessionId.Length)]}... | " +
+                            $"Role: {role} | Cookie: HttpOnly+SameSite=Strict | " +
+                            $"Tailscale: {IsTailscale(ip)}"
+            });
+        }
+
+        // Helper kiem tra IP Tailscale
+        private static bool IsTailscale(string ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return false;
+            var p = ip.Split('.');
+            return p.Length >= 2
+                && int.TryParse(p[0], out var a) && a == 100
+                && int.TryParse(p[1], out var b) && b >= 64 && b <= 127;
+        }
+
         // ── Query ─────────────────────────────────────────────────────────────
 
         /// <summary>Lay n ban ghi moi nhat, loc theo category neu co.</summary>

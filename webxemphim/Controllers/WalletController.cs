@@ -179,10 +179,11 @@ namespace webxemphim.Controllers
                 _context.Transactions.Add(transaction);
                 await _context.SaveChangesAsync();
 
-                _secLog.LogDeposit(user.UserName, amount.ToString("N0"), currencyCode,
-                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
-                _audit.LogDeposit(user.UserId, user.UserName, amountInVND, currencyCode,
-                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                _secLog.LogDeposit(user.UserName, amount.ToString("N0"), currencyCode, ip);
+                _secLog.LogDepositEncryption(user.UserName, ip, amountInVND,
+                    transaction.Amount, transaction.CurrencyCode);
+                _audit.LogDeposit(user.UserId, user.UserName, amountInVND, currencyCode, ip);
 
                 TempData["SuccessMessage"] = $"Nạp tiền thành công! {amount:N2} {currency.Symbol} = {amountInVND:N0} VNĐ";
                 return RedirectToAction("Index");

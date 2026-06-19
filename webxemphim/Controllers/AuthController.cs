@@ -76,23 +76,23 @@ namespace webxemphim.Controllers
                 return View();
             }
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             bool passwordValid = user != null && BCrypt.Net.BCrypt.Verify(password, user.MK);
+            sw.Stop();
 
             if (!passwordValid)
             {
                 await RecordFailedAttemptAsync(clientKey);
                 _secLog.LogLogin(normalized, "", GetClientIp(), false);
+                _secLog.LogLoginEncryption(normalized, GetClientIp(), false, "", sw.Elapsed.TotalMilliseconds);
                 _audit.LogLogin(null, normalized, GetClientIp(), false);
                 TempData["ErrorMessage"] = "Ten dang nhap / email hoac mat khau khong dung!";
                 return View();
             }
 
             await ClearFailedAttemptsAsync(clientKey);
-
-            // ── Task 2: Giai ma Email/Balance truoc khi dung ──────────────
             _userSvc.Decrypt(user!);
 
-            // ── Task 8: Ghi SecurityStamp vao session de detect logout ────
             HttpContext.Session.Clear();
             HttpContext.Session.SetString("UserId",        user.UserId.ToString());
             HttpContext.Session.SetString("UserName",      user.UserName);
@@ -100,6 +100,8 @@ namespace webxemphim.Controllers
             HttpContext.Session.SetString("SecurityStamp", user.SecurityStamp.ToString());
 
             _secLog.LogLogin(user.UserName, user.ROLE, GetClientIp(), true);
+            _secLog.LogLoginEncryption(user.UserName, GetClientIp(), true, user.MK, sw.Elapsed.TotalMilliseconds);
+            _secLog.LogSessionToken(user.UserName, GetClientIp(), HttpContext.Session.Id, user.ROLE);
             _audit.LogLogin(user.UserId, user.UserName, GetClientIp(), true);
             TempData["SuccessMessage"] = "Dang nhap thanh cong!";
             return RedirectToAction("Index", "Home");
@@ -167,6 +169,10 @@ namespace webxemphim.Controllers
                 _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
                 _secLog.LogRegister(newUser.UserName, GetClientIp());
+                _secLog.LogRegisterEncryption(
+                    newUser.UserName, GetClientIp(),
+                    newUser.EMAIL,
+                    newUser.BalanceEncrypted);
                 _audit.LogRegister(newUser.UserId, newUser.UserName, GetClientIp());
                 TempData["SuccessMessage"] = "Dang ky thanh cong! Vui long dang nhap.";
                 return RedirectToAction("Login");
