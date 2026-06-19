@@ -1,47 +1,138 @@
 @model IEnumerable<webxemphim.Models.User>
-
 @{
-    ViewData["Title"] = "Quản lý User";
+    ViewData["Title"] = "Quan ly tai khoan";
 }
 
-<h1>Quản lý User</h1>
+<style>
+.um-wrap  { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+.um-hdr   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.um-title { font-size: 1.4rem; font-weight: bold; color: #ffd700; }
+.btn-add  { background: #ffd700; color: #232533; border: none; padding: 9px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
+.btn-add:hover { background: #ffed4e; color: #232533; }
+.um-table { width: 100%; border-collapse: collapse; background: #232533; border-radius: 12px; overflow: hidden; }
+.um-table thead tr { background: #1a1b2a; }
+.um-table th { padding: 12px 14px; color: #aaa; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+.um-table td { padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; vertical-align: middle; }
+.um-table tr:last-child td { border-bottom: none; }
+.um-table tr:hover td { background: rgba(255,255,255,0.03); }
+.role-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+.r-admin { background: #4a0000; color: #e74c3c; }
+.r-vip   { background: #4a3a00; color: #f39c12; }
+.r-user  { background: #1a2a4a; color: #3498db; }
+.lock-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; }
+.locked   { background: #4a0000; color: #e74c3c; }
+.unlocked { background: #1a3a1a; color: #2ecc71; }
+.btn-sm   { padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; text-decoration: none; border: none; cursor: pointer; }
+.btn-edit { background: #2980b9; color: #fff; }
+.btn-del  { background: #922b21; color: #fff; }
+.btn-lock { background: #784212; color: #f39c12; border: 1px solid #f39c12; }
+.btn-unlock { background: #1a472a; color: #2ecc71; border: 1px solid #2ecc71; }
+.bal      { font-family: monospace; color: #2ecc71; }
+.vip-exp  { font-size: 0.75rem; color: #f39c12; }
+.vip-exp.expired { color: #e74c3c; }
+.alert-s  { padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; }
+.alert-ok { background: #1a3a1a; color: #2ecc71; }
+.alert-er { background: #4a0000; color: #e74c3c; }
+</style>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Tạo User mới</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.UserName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EMAIL)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ROLE)
-            </th>
-            <th>Thao tác</th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.UserName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.EMAIL)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ROLE)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.UserId" class="btn btn-warning btn-sm">Sửa</a> |
-                <a asp-action="Details" asp-route-id="@item.UserId" class="btn btn-info btn-sm">Chi tiết</a> |
-                <a asp-action="Delete" asp-route-id="@item.UserId" class="btn btn-danger btn-sm">Xóa</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table> 
+<div class="um-wrap">
+    <div class="um-hdr">
+        <div class="um-title"><i class="fas fa-users"></i> Quan ly tai khoan</div>
+        <a asp-action="Create" class="btn-add"><i class="fas fa-user-plus"></i> Tao tai khoan moi</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert-s alert-ok">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert-s alert-er">@TempData["ErrorMessage"]</div>
+    }
+
+    <table class="um-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Ten hien thi</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>So du (VND)</th>
+                <th>VIP het han</th>
+                <th>Trang thai</th>
+                <th>Thao tac</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var u in Model)
+        {
+            <tr>
+                <td style="color:#666;">@u.UserId</td>
+                <td style="color:#fff;font-weight:500;">@u.UserName</td>
+                <td style="color:#aaa;">@u.EMAIL</td>
+                <td>
+                    @if (u.ROLE == "Admin")
+                    { <span class="role-badge r-admin">Admin</span> }
+                    else if (u.ROLE == "User VIP")
+                    { <span class="role-badge r-vip">User VIP</span> }
+                    else
+                    { <span class="role-badge r-user">User</span> }
+                </td>
+                <td class="bal">@u.Balance.ToString("N0")</td>
+                <td>
+                    @if (u.VIPExpiryDate.HasValue)
+                    {
+                        var isExpired = u.VIPExpiryDate.Value < DateTime.UtcNow;
+                        <span class="vip-exp @(isExpired ? "expired" : "")">
+                            @(isExpired ? "[Het han] " : "")@u.VIPExpiryDate.Value.ToString("dd/MM/yyyy")
+                        </span>
+                    }
+                    else
+                    {
+                        <span style="color:#555;">—</span>
+                    }
+                </td>
+                <td>
+                    @if (u.IsLocked)
+                    { <span class="lock-badge locked">Bi khoa</span> }
+                    else
+                    { <span class="lock-badge unlocked">Hoat dong</span> }
+                </td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <a asp-action="Edit" asp-route-id="@u.UserId" class="btn-sm btn-edit">
+                        <i class="fas fa-edit"></i> Sua
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@u.UserId" class="btn-sm btn-del">
+                        <i class="fas fa-trash"></i> Xoa
+                    </a>
+                    @* Khoa / Mo khoa *@
+                    <form asp-action="ToggleLock" asp-route-id="@u.UserId" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        @if (u.IsLocked)
+                        {
+                            <button type="submit" class="btn-sm btn-unlock"
+                                    onclick="return confirm('Mo khoa tai khoan @u.UserName?')">
+                                <i class="fas fa-unlock"></i> Mo khoa
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn-sm btn-lock"
+                                    onclick="return confirm('Khoa tai khoan @u.UserName?')">
+                                <i class="fas fa-lock"></i> Khoa
+                            </button>
+                        }
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:40px;color:#555;">
+            Chua co tai khoan nao.
+        </div>
+    }
+</div>

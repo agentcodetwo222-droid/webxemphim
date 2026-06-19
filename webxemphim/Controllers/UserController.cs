@@ -40,19 +40,23 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // ── SECURITY: không trả về cột MK (password hash) ra view
             var users = await _context.Users
                 .Select(u => new User
                 {
-                    UserId    = u.UserId,
-                    UserName  = u.UserName,
-                    EMAIL     = u.EMAIL,
-                    ROLE      = u.ROLE,
-                    Balance   = u.Balance,
-                    VIPExpiryDate = u.VIPExpiryDate,
-                    CreatedAt = u.CreatedAt
+                    UserId          = u.UserId,
+                    UserName        = u.UserName,
+                    EMAIL           = u.EMAIL,           // ciphertext — giai ma ben duoi
+                    ROLE            = u.ROLE,
+                    BalanceEncrypted= u.BalanceEncrypted, // can de giai ma
+                    VIPExpiryDate   = u.VIPExpiryDate,
+                    IsLocked        = u.IsLocked,
+                    CreatedAt       = u.CreatedAt
                 })
                 .ToListAsync();
+
+            // Giai ma EMAIL + Balance cho tung user
+            foreach (var u in users)
+                _userSvc.Decrypt(u);
 
             return View(users);
         }
@@ -94,40 +98,50 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            if (ModelState.IsValid)
+            // Xoa ModelState errors cua cac truong se duoc xu ly trong code
+            ModelState.Remove("BalanceEncrypted");
+            ModelState.Remove("EMAIL");
+            ModelState.Remove("MK");
+
+            // Validate thu cong
+            if (string.IsNullOrWhiteSpace(user.UserName))
+                ModelState.AddModelError("UserName", "Ten hien thi khong duoc de trong.");
+            if (string.IsNullOrWhiteSpace(user.EMAIL))
+                ModelState.AddModelError("EMAIL", "Email khong duoc de trong.");
+            if (string.IsNullOrWhiteSpace(user.ROLE))
+                ModelState.AddModelError("ROLE", "Vui long chon vai tro.");
+
+            // Password complexity check
+            var pwErr = UserService.ValidatePassword(user.MK);
+            if (pwErr != null)
+                ModelState.AddModelError("MK", pwErr);
+
+            if (!ModelState.IsValid)
+                return View(user);
+
+            // Kiem tra email trung
+            var allUsers = await _context.Users.ToListAsync();
+            if (_userSvc.EmailExists(allUsers, user.EMAIL))
             {
-                // ── Password complexity check ──────────────────────────────
-                var pwErr = UserService.ValidatePassword(user.MK);
-                if (pwErr != null)
-                {
-                    ModelState.AddModelError("MK", pwErr);
-                    return View(user);
-                }
-
-                // ── Kiem tra email trung ───────────────────────────────────
-                var allUsers = await _context.Users.ToListAsync();
-                if (_userSvc.EmailExists(allUsers, user.EMAIL))
-                {
-                    ModelState.AddModelError("EMAIL", "Email nay da duoc su dung!");
-                    return View(user);
-                }
-
-                // ── Ma hoa truoc khi luu ──────────────────────────────────
-                user.MK      = BCrypt.Net.BCrypt.HashPassword(user.MK, workFactor: 12);
-                user.Balance = 0;
-                if (!string.IsNullOrEmpty(user.Phone))   user.Phone   = _enc.Encrypt(user.Phone.Trim());
-                if (!string.IsNullOrEmpty(user.Address)) user.Address = _enc.Encrypt(user.Address.Trim());
-                _userSvc.EncryptForSave(user); // ma hoa EMAIL + BalanceEncrypted
-
-                _context.Add(user);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("SECURITY: Admin tao user moi. UserId={Id}", user.UserId);
-                _secLog.LogRegister(user.UserName, GetIp());
-                _audit.LogRegister(user.UserId, user.UserName, GetIp());
-                TempData["SuccessMessage"] = $"Da tao tai khoan {user.UserName} voi role {user.ROLE}!";
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("EMAIL", "Email nay da duoc su dung!");
+                return View(user);
             }
-            return View(user);
+
+            // Ma hoa truoc khi luu
+            user.MK       = BCrypt.Net.BCrypt.HashPassword(user.MK, workFactor: 12);
+            user.Balance  = 0;
+            user.CreatedAt = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(user.Phone))   user.Phone   = _enc.Encrypt(user.Phone.Trim());
+            if (!string.IsNullOrEmpty(user.Address)) user.Address = _enc.Encrypt(user.Address.Trim());
+            _userSvc.EncryptForSave(user); // ma hoa EMAIL + BalanceEncrypted
+
+            _context.Add(user);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("SECURITY: Admin tao user moi. UserId={Id}", user.UserId);
+            _secLog.LogRegister(user.UserName, GetIp());
+            _audit.LogRegister(user.UserId, user.UserName, GetIp());
+            TempData["SuccessMessage"] = $"Da tao tai khoan {user.UserName} voi role {user.ROLE}!";
+            return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(int? id)
