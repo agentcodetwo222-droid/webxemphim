@@ -3,6 +3,7 @@
     var role = Context.Session.GetString("UserRole");
     if (role != "Admin") { Context.Response.Redirect("/"); return; }
 }
+@Html.AntiForgeryToken()
 <style>
 .mon{max-width:1400px;margin:0 auto;padding:24px 16px}
 .mon-title{font-size:1.6rem;font-weight:bold;color:#2ecc71;margin-bottom:4px}
@@ -38,6 +39,19 @@
 <div class="mon">
 <div class="mon-title"><span class="live-dot"></span> Security Monitor Real-time</div>
 <div class="mon-sub">Auto refresh every 5s &mdash; Logs all security/crypto/vpn events &middot; Admin only</div>
+
+@* Test VPN Button *@
+<div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <button id="btn-test-vpn" onclick="testVpnConnection()"
+        style="background:#3498db;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:.9rem;">
+        <i class="fas fa-network-wired"></i> Test VPN Connection
+    </button>
+    <button id="btn-check-ip" onclick="checkMyIp()"
+        style="background:#1a1b2a;color:#aaa;border:1px solid #444;padding:9px 20px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:.9rem;">
+        <i class="fas fa-search"></i> Check My IP
+    </button>
+    <div id="vpn-test-result" style="font-family:monospace;font-size:.85rem;color:#2ecc71;display:none;background:#1a1b2a;padding:8px 14px;border-radius:8px;border:1px solid #2ecc71;"></div>
+</div>
 
 <div class="stats-row">
   <div class="stat-card"><div class="stat-num" id="s-login" style="color:#2ecc71">0</div><div class="stat-lbl">Login OK</div></div>
@@ -359,5 +373,73 @@ async function poll(){
 
 poll();
 setInterval(poll,5000);
+
+// ── Test VPN functions ────────────────────────────────────────────────────
+async function testVpnConnection() {
+    const btn = document.getElementById('btn-test-vpn');
+    const res = document.getElementById('vpn-test-result');
+    btn.disabled = true;
+    btn.textContent = 'Testing...';
+    try {
+        const r = await fetch('/Security/TestVpnLog', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' }
+        });
+        const d = await r.json();
+        res.style.display = 'block';
+        if (d.is_tailscale) {
+            res.style.borderColor = '#3498db';
+            res.style.color       = '#3498db';
+            res.innerHTML = '<i class="fas fa-check-circle"></i> Tailscale: ' + d.client_ip
+                + ' | Tunnel: ' + d.tunnel
+                + ' | ' + d.events_added + ' events added to Monitor';
+        } else {
+            res.style.borderColor = '#f39c12';
+            res.style.color       = '#f39c12';
+            res.innerHTML = '<i class="fas fa-info-circle"></i> HTTPS: ' + d.client_ip
+                + ' | ' + d.tunnel
+                + ' | ' + d.events_added + ' events added';
+        }
+        // Poll ngay de thay event moi
+        setTimeout(poll, 500);
+    } catch(e) {
+        res.style.display = 'block';
+        res.style.color   = '#e74c3c';
+        res.textContent   = 'Error: ' + e.message;
+    } finally {
+        btn.disabled    = false;
+        btn.innerHTML   = '<i class="fas fa-network-wired"></i> Test VPN Connection';
+    }
+}
+
+async function checkMyIp() {
+    const btn = document.getElementById('btn-check-ip');
+    const res = document.getElementById('vpn-test-result');
+    btn.disabled = true;
+    try {
+        const r = await fetch('/Security/MyIp');
+        const d = await r.json();
+        res.style.display = 'block';
+        if (d.is_tailscale) {
+            res.style.borderColor = '#3498db';
+            res.style.color       = '#3498db';
+            res.innerHTML = '<i class="fas fa-network-wired"></i> IP: <b>' + d.ip + '</b>'
+                + ' | <b>Tailscale VPN detected!</b>'
+                + ' | Protocol: WireGuard/ChaCha20-Poly1305'
+                + ' | ' + d.timestamp + ' UTC';
+        } else {
+            res.style.borderColor = '#aaa';
+            res.style.color       = '#aaa';
+            res.innerHTML = '<i class="fas fa-globe"></i> IP: <b>' + d.ip + '</b>'
+                + ' | Direct HTTPS/TLS'
+                + ' | ' + d.timestamp + ' UTC';
+        }
+    } catch(e) {
+        res.textContent = 'Error: ' + e.message;
+    } finally {
+        btn.disabled  = false;
+        btn.textContent = 'Check My IP';
+    }
+}
 </script>
 }</script>

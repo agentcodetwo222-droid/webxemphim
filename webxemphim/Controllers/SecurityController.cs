@@ -223,6 +223,86 @@ namespace webxemphim.Controllers
             return View();
         }
 
+        // ── GET /Security/MyIp — tra ve IP hien tai de kiem tra Tailscale ────
+        [HttpGet]
+        public IActionResult MyIp()
+        {
+            var ip       = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var fwdProto = Request.Headers["X-Forwarded-Proto"].ToString();
+            var fwdFor   = Request.Headers["X-Forwarded-For"].ToString();
+            var realIp   = string.IsNullOrEmpty(fwdFor) ? ip : fwdFor.Split(',')[0].Trim();
+
+            bool isTailscale = false;
+            if (!string.IsNullOrEmpty(realIp))
+            {
+                var parts = realIp.Split('.');
+                isTailscale = parts.Length >= 2
+                    && int.TryParse(parts[0], out var a) && a == 100
+                    && int.TryParse(parts[1], out var b) && b >= 64 && b <= 127;
+            }
+
+            return Ok(new
+            {
+                ip            = realIp,
+                raw_ip        = ip,
+                forwarded_for = fwdFor,
+                forwarded_proto = fwdProto,
+                is_tailscale  = isTailscale,
+                timestamp     = DateTime.UtcNow.ToString("HH:mm:ss.fff")
+            });
+        }
+
+        // ── POST /Security/TestVpnLog — inject VPN test event vao Monitor ────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult TestVpnLog()
+        {
+            if (HttpContext.Session.GetString("UserRole") != "Admin")
+                return Forbid();
+
+            var ip       = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var fwdFor   = Request.Headers["X-Forwarded-For"].ToString();
+            var realIp   = string.IsNullOrEmpty(fwdFor) ? ip : fwdFor.Split(',')[0].Trim();
+            var userName = HttpContext.Session.GetString("UserName") ?? "Admin";
+
+            bool isTailscale = false;
+            if (!string.IsNullOrEmpty(realIp))
+            {
+                var parts = realIp.Split('.');
+                isTailscale = parts.Length >= 2
+                    && int.TryParse(parts[0], out var a) && a == 100
+                    && int.TryParse(parts[1], out var b) && b >= 64 && b <= 127;
+            }
+
+            var tunnel = isTailscale ? "Tailscale/WireGuard (ChaCha20-Poly1305)" : "HTTPS/TLS (AES-256-GCM)";
+
+            // Log test connection event
+            _secLog.LogVpnTraffic("C->S", "VPN_TEST",  userName, realIp,
+                "Encrypted", isTailscale ? "ChaCha20-Poly1305" : "TLS",
+                $"Test request from {realIp} via {tunnel}", 128, 0);
+
+            _secLog.LogVpnTraffic("S->C", "VPN_TEST", userName, realIp,
+                "Encrypted", isTailscale ? "ChaCha20-Poly1305" : "TLS",
+                $"Server response -> {realIp} | Tunnel: {tunnel} | OK", 64, 0);
+
+            // Log session info
+            _secLog.LogSessionToken(userName, realIp,
+                HttpContext.Session.Id, "Admin");
+
+            return Ok(new
+            {
+                success      = true,
+                client_ip    = realIp,
+                is_tailscale = isTailscale,
+                tunnel       = tunnel,
+                events_added = 3,
+                timestamp    = DateTime.UtcNow.ToString("HH:mm:ss.fff"),
+                message      = isTailscale
+                    ? $"Ket noi Tailscale phat hien! IP: {realIp} | 3 events da them vao Monitor"
+                    : $"Ket noi HTTPS thuong. IP: {realIp} | 3 events da them vao Monitor"
+            });
+        }
+
         // ── GET /Security/LiveFeed — polling API tra JSON ──────────────────────
         [HttpGet]
         public IActionResult LiveFeed(string? category = null, int count = 60)
