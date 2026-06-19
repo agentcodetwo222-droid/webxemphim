@@ -123,12 +123,90 @@
         @* Panel 5: SSTP Flow Diagram *@
         <div class="panel full-panel">
             <div class="panel-hdr" style="color:#ffd700;">
-                <span><i class="fas fa-project-diagram"></i> Luong hoat dong SSTP / AES-256-GCM (cap nhat khi co su kien ma hoa moi)</span>
+                <span><i class="fas fa-project-diagram"></i> Luong hoat dong SSTP / AES-256-GCM</span>
                 <span id="flow-time" style="color:#666;font-size:0.75rem;"></span>
             </div>
             <div style="padding:16px;" id="flow-content">
                 <div style="color:#555;text-align:center;padding:32px;">
-                    Cho su kien ma hoa tu nguoi dung... Hay de nguoi dung dang nhap hoac thuc hien giao dich.
+                    Cho su kien ma hoa tu nguoi dung...
+                </div>
+            </div>
+        </div>
+
+        @* Panel 6: Tailscale Connections *@
+        <div class="panel full-panel">
+            <div class="panel-hdr" style="color:#3498db;">
+                <span>
+                    <i class="fas fa-network-wired"></i> Tailscale Connections
+                    <span style="font-size:0.75rem;color:#666;margin-left:8px;">
+                        (IP 100.x.x.x = ket noi qua Tailscale VPN)
+                    </span>
+                </span>
+                <span>
+                    <span class="cnt-badge" id="cnt-ts">0</span>
+                    <span id="ts-status" style="margin-left:8px;font-size:0.75rem;color:#666;">
+                        Chua co ket noi Tailscale
+                    </span>
+                </span>
+            </div>
+            <div style="padding:16px;">
+                @* Bang thong ke Tailscale *@
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+                    <div style="background:#1a1b2a;border:1px solid #2980b9;border-radius:8px;padding:12px;text-align:center;">
+                        <div style="font-size:1.5rem;font-weight:bold;color:#3498db;" id="ts-total">0</div>
+                        <div style="font-size:0.75rem;color:#aaa;">Tong ket noi Tailscale</div>
+                    </div>
+                    <div style="background:#1a1b2a;border:1px solid #2ecc71;border-radius:8px;padding:12px;text-align:center;">
+                        <div style="font-size:1.5rem;font-weight:bold;color:#2ecc71;" id="ts-login">0</div>
+                        <div style="font-size:0.75rem;color:#aaa;">Dang nhap thanh cong</div>
+                    </div>
+                    <div style="background:#1a1b2a;border:1px solid #9b59b6;border-radius:8px;padding:12px;text-align:center;">
+                        <div style="font-size:1.5rem;font-weight:bold;color:#9b59b6;" id="ts-crypto">0</div>
+                        <div style="font-size:0.75rem;color:#aaa;">Su kien ma hoa</div>
+                    </div>
+                </div>
+
+                @* Bang danh sach ket noi *@
+                <div style="font-size:0.78rem;color:#aaa;margin-bottom:8px;">
+                    DANH SACH SU KIEN TU TAILSCALE (IP bat dau bang 100.)
+                </div>
+                <div id="ts-feed" style="max-height:200px;overflow-y:auto;"></div>
+
+                @* Huong dan *@
+                <div style="margin-top:16px;background:#1a1b2a;border:1px solid #333;border-radius:8px;padding:12px;font-size:0.8rem;color:#888;">
+                    <div style="color:#ffd700;font-weight:bold;margin-bottom:8px;">
+                        <i class="fas fa-info-circle"></i> Cach hoat dong Tailscale + Security Monitor
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div>
+                            <div style="color:#3498db;margin-bottom:4px;">Buoc 1 — Cai Tailscale</div>
+                            <div>Cai tren ca may Server (Railway) va may Client</div>
+                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;">
+                                curl -fsSL https://tailscale.com/install.sh | sh
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color:#3498db;margin-bottom:4px;">Buoc 2 — Ket noi</div>
+                            <div>Dang nhap cung 1 Tailscale account tren ca 2 may</div>
+                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;">
+                                tailscale up --authkey=&lt;key&gt;
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color:#3498db;margin-bottom:4px;">Buoc 3 — Truy cap</div>
+                            <div>Client truy cap webxemphim qua IP Tailscale</div>
+                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;">
+                                http://100.x.x.x:8080
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color:#3498db;margin-bottom:4px;">Buoc 4 — Quan sat</div>
+                            <div>Admin thay IP 100.x.x.x trong Monitor nay</div>
+                            <div style="font-family:monospace;background:#0d1117;padding:4px 8px;border-radius:4px;margin-top:4px;color:#2ecc71;">
+                                IP: 100.x.x.x → Tailscale
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -150,6 +228,20 @@ let paused    = false;
 let lastId    = 0;
 const colors  = {SUCCESS:'#2ecc71',WARNING:'#f39c12',DANGER:'#e74c3c',CRYPTO:'#3498db',FINANCE:'#9b59b6',SECURITY:'#1abc9c',INFO:'#95a5a6'};
 
+// Kiem tra IP co phai Tailscale khong (100.64.0.0/10)
+function isTailscale(ip) {
+    if (!ip) return false;
+    const parts = ip.split('.');
+    if (parts.length < 2) return false;
+    const first  = parseInt(parts[0]);
+    const second = parseInt(parts[1]);
+    // 100.64.0.0 - 100.127.255.255
+    return first === 100 && second >= 64 && second <= 127;
+}
+
+// Tailscale counters
+let tsTotal = 0, tsLogin = 0, tsCrypto = 0;
+
 function togglePause() {
     paused = !paused;
     const btn = document.getElementById('btn-pause');
@@ -158,12 +250,17 @@ function togglePause() {
 }
 
 function row(e) {
+    const tsTag = isTailscale(e.ipAddress)
+        ? ' <span style="background:#1a2a4a;color:#3498db;padding:1px 6px;border-radius:4px;font-size:0.7rem;margin-left:4px;">Tailscale</span>'
+        : '';
     return '<div class="log-row">'
         + '<span class="log-time">' + e.time + '</span>'
         + '<span class="log-badge ' + e.level + '">' + e.category + '</span>'
         + '<div style="flex:1"><div class="log-msg">' + e.message
         + (e.userName && e.userName !== 'System' ? ' <span style="color:#666">| ' + e.userName + '</span>' : '')
-        + (e.ipAddress && e.ipAddress !== 'internal' && e.ipAddress !== 'unknown' ? ' <span style="color:#444">IP:' + e.ipAddress + '</span>' : '')
+        + (e.ipAddress && e.ipAddress !== 'internal' && e.ipAddress !== 'unknown'
+            ? ' <span style="color:#444">IP:' + e.ipAddress + '</span>' + tsTag
+            : '')
         + '</div>'
         + (e.detail ? '<div class="log-det">' + e.detail + '</div>' : '')
         + '</div></div>';
@@ -248,6 +345,26 @@ async function poll() {
         if (finEvts.length) {
             prepend('feed-fin', finEvts.map(row).join(''));
             document.getElementById('cnt-fin').textContent = (d.stats.DEPOSIT || 0) + (d.stats.BUY_VIP || 0);
+        }
+
+        // Tailscale — loc su kien co IP 100.x.x.x
+        const tsEvts = newEvts.filter(e => isTailscale(e.ipAddress));
+        if (tsEvts.length) {
+            tsTotal += tsEvts.length;
+            tsLogin  += tsEvts.filter(e => e.category === 'LOGIN_OK').length;
+            tsCrypto += tsEvts.filter(e => ['ENCRYPT','DECRYPT'].includes(e.category)).length;
+
+            // Cap nhat so lieu
+            document.getElementById('ts-total').textContent  = tsTotal;
+            document.getElementById('ts-login').textContent  = tsLogin;
+            document.getElementById('ts-crypto').textContent = tsCrypto;
+            document.getElementById('cnt-ts').textContent    = tsTotal;
+            document.getElementById('ts-status').textContent =
+                'Ket noi cuoi: ' + tsEvts[0].time + ' UTC | IP: ' + tsEvts[0].ipAddress;
+            document.getElementById('ts-status').style.color = '#3498db';
+
+            // Them vao feed Tailscale
+            prepend('ts-feed', tsEvts.map(row).join(''));
         }
 
     } catch(e) { /* silent */ }
