@@ -8,15 +8,18 @@ namespace webxemphim.Controllers
 {
     public class UserController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext    _context;
         private readonly ILogger<UserController> _logger;
-        private readonly EncryptionService _enc;
+        private readonly EncryptionService       _enc;
+        private readonly SecurityLogService      _secLog;
 
-        public UserController(ApplicationDbContext context, ILogger<UserController> logger, EncryptionService enc)
+        public UserController(ApplicationDbContext context, ILogger<UserController> logger,
+                              EncryptionService enc, SecurityLogService secLog)
         {
             _context = context;
             _logger  = logger;
             _enc     = enc;
+            _secLog  = secLog;
         }
 
         // ── SECURITY: helper kiểm tra Admin tập trung
@@ -96,6 +99,7 @@ namespace webxemphim.Controllers
                 _context.Add(user);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("SECURITY: Admin tạo user mới. Email={Email}", user.EMAIL);
+                _secLog.LogRegister(user.UserName, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "admin");
                 return RedirectToAction(nameof(Index));
             }
             return View(user);
@@ -159,6 +163,7 @@ namespace webxemphim.Controllers
 
                     await _context.SaveChangesAsync();
                     _logger.LogInformation("SECURITY: Admin cập nhật user. UserId={Id}", id);
+                    _secLog.LogEncrypt("User.Edit (Admin)", $"UserId={id}", "Phone/Address re-encrypted", 0);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -202,6 +207,8 @@ namespace webxemphim.Controllers
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("SECURITY: Admin xóa user. UserId={Id}", id);
+                _secLog.LogLogin($"DELETE UserId={id}", "Admin-Action",
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "admin", false);
             }
 
             return RedirectToAction(nameof(Index));

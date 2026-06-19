@@ -8,12 +8,14 @@ namespace webxemphim.Controllers
     public class MovieController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly EncryptionService _enc;
+        private readonly EncryptionService    _enc;
+        private readonly SecurityLogService   _secLog;
 
-        public MovieController(ApplicationDbContext context, EncryptionService enc)
+        public MovieController(ApplicationDbContext context, EncryptionService enc, SecurityLogService secLog)
         {
             _context = context;
             _enc     = enc;
+            _secLog  = secLog;
         }
 
         [HttpGet]
@@ -175,6 +177,8 @@ namespace webxemphim.Controllers
 
                 _context.Add(movie);
                 await _context.SaveChangesAsync();
+                _secLog.LogEncrypt("Movie.ImageUrl + VideoUrl", movie.Title,
+                    "Base64(Nonce+Tag+Cipher)", 0);
                 TempData["SuccessMessage"] = "Thêm phim thành công!";
                 return RedirectToAction(nameof(Index));
             }
@@ -231,6 +235,8 @@ namespace webxemphim.Controllers
 
                     _context.Update(movie);
                     await _context.SaveChangesAsync();
+                    _secLog.LogEncrypt("Movie.ImageUrl + VideoUrl (Edit)", movie.Title,
+                        "Base64(Nonce+Tag+Cipher)", 0);
                     TempData["SuccessMessage"] = "Cập nhật phim thành công!";
                 }
                 catch (DbUpdateConcurrencyException)
@@ -273,10 +279,12 @@ namespace webxemphim.Controllers
             }
 
             var movie = await _context.Movies.FindAsync(id);
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             if (movie != null)
             {
                 _context.Movies.Remove(movie);
                 await _context.SaveChangesAsync();
+                _secLog.LogEncrypt("Movie.Delete", $"MovieId={id}", "Xoa khoi DB", 0);
                 TempData["SuccessMessage"] = "Xóa phim thành công!";
             }
 

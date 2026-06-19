@@ -14,55 +14,68 @@ namespace webxemphim.Services
     public class EncryptionService
     {
         private readonly byte[] _key;
-        private const int NonceSize = 12;  // AES-GCM chuẩn 96-bit
-        private const int TagSize   = 16;  // 128-bit authentication tag
+        private readonly SecurityLogService? _secLog;
+        private const int NonceSize = 12;
+        private const int TagSize   = 16;
 
-        public EncryptionService(IConfiguration configuration)
+        public EncryptionService(IConfiguration configuration, SecurityLogService? secLog = null)
         {
             var keyBase64 = configuration["Encryption:Key"]
                 ?? throw new InvalidOperationException(
-                    "Encryption:Key chưa được cấu hình. " +
-                    "Chạy: dotnet user-secrets set \"Encryption:Key\" \"<base64-256bit-key>\"");
+                    "Encryption:Key chua duoc cau hinh. " +
+                    "Chay: dotnet user-secrets set \"Encryption:Key\" \"<base64-256bit-key>\"");
 
-            _key = Convert.FromBase64String(keyBase64);
+            _key    = Convert.FromBase64String(keyBase64);
+            _secLog = secLog;
 
             if (_key.Length != 32)
-                throw new InvalidOperationException("Encryption:Key phải là 256-bit (32 bytes, Base64).");
+                throw new InvalidOperationException("Encryption:Key phai la 256-bit (32 bytes, Base64).");
         }
 
-        /// <summary>Mã hóa chuỗi plaintext → Base64 ciphertext lưu DB.</summary>
+        /// <summary>Ma hoa chuoi plaintext -> Base64 ciphertext luu DB.</summary>
         public string Encrypt(string plaintext)
         {
             if (string.IsNullOrEmpty(plaintext)) return plaintext;
 
+            var sw             = System.Diagnostics.Stopwatch.StartNew();
             var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
             var nonce          = new byte[NonceSize];
             var tag            = new byte[TagSize];
             var ciphertext     = new byte[plaintextBytes.Length];
 
-            // Sinh nonce ngẫu nhiên mới mỗi lần (tuyệt đối không tái dùng nonce với GCM)
             RandomNumberGenerator.Fill(nonce);
 
             using var aesGcm = new AesGcm(_key, TagSize);
             aesGcm.Encrypt(nonce, plaintextBytes, ciphertext, tag);
 
-            // Gộp: nonce(12) + tag(16) + ciphertext → Base64
             var combined = new byte[NonceSize + TagSize + ciphertext.Length];
             Buffer.BlockCopy(nonce,       0, combined, 0,                    NonceSize);
             Buffer.BlockCopy(tag,         0, combined, NonceSize,            TagSize);
             Buffer.BlockCopy(ciphertext,  0, combined, NonceSize + TagSize,  ciphertext.Length);
 
-            return Convert.ToBase64String(combined);
+            var result = Convert.ToBase64String(combined);
+            sw.Stop();
+
+            // Ghi log neu la du lieu dang chu y (khong log decimal ngan)
+            if (plaintextBytes.Length > 3)
+            {
+                var preview = plaintext.Length > 20 ? plaintext[..20] + "..." : plaintext;
+                _secLog?.LogEncrypt("AES-256-GCM", preview,
+                    $"Nonce={Convert.ToHexString(nonce)[..8]}... Tag={Convert.ToHexString(tag)[..8]}...",
+                    sw.Elapsed.TotalMilliseconds);
+            }
+
+            return result;
         }
 
-        /// <summary>Giải mã Base64 ciphertext từ DB → plaintext.</summary>
+        /// <summary>Giai ma Base64 ciphertext tu DB -> plaintext.</summary>
         public string Decrypt(string encryptedBase64)
         {
             if (string.IsNullOrEmpty(encryptedBase64)) return encryptedBase64;
 
             byte[] combined;
             try { combined = Convert.FromBase64String(encryptedBase64); }
-            catch { return encryptedBase64; } // dữ liệu cũ chưa mã hóa → trả về nguyên
+            catch { return encryptedBase64; }
 
             if (combined.Length < NonceSize + TagSize) return encryptedBase64;
 
@@ -75,10 +88,18 @@ namespace webxemphim.Services
             Buffer.BlockCopy(combined, NonceSize,            tag,        0, TagSize);
             Buffer.BlockCopy(combined, NonceSize + TagSize,  ciphertext, 0, ciphertext.Length);
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             using var aesGcm = new AesGcm(_key, TagSize);
             aesGcm.Decrypt(nonce, ciphertext, tag, plaintext);
+            sw.Stop();
 
-            return Encoding.UTF8.GetString(plaintext);
+            var result = Encoding.UTF8.GetString(plaintext);
+
+            // Ghi log giai ma neu du lieu dang chu y
+            if (ciphertext.Length > 3)
+                _secLog?.LogDecrypt("AES-256-GCM", sw.Elapsed.TotalMilliseconds);
+
+            return result;
         }
 
         /// <summary>Mã hóa số decimal → string lưu DB.</summary>
