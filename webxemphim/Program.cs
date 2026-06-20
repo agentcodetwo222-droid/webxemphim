@@ -34,6 +34,7 @@ builder.Services.AddSingleton<webxemphim.Services.SecurityLogService>();
 
 // ── SECURITY: User Service (ma hoa Email/Balance) ─────────────────────────
 builder.Services.AddScoped<webxemphim.Services.UserService>();
+builder.Services.AddScoped<webxemphim.Services.SchemaDataService>();
 
 // ── SECURITY: Audit Log ben vung (luu DB) ─────────────────────────────────
 builder.Services.AddSingleton<webxemphim.Services.AuditLogService>();
@@ -49,6 +50,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     ));
 
 var app = builder.Build();
+
+// ── One-time schema reset (Railway: set APPLY_SCHEMA=true rồi deploy) ─────
+await ApplyDatabaseSchema.RunAsync(app.Services);
 
 // ── Seed Admin ─────────────────────────────────────────────────────────────
 // resetIfExists: false → chỉ tạo nếu chưa có
@@ -84,24 +88,61 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseRouting();
 app.UseSession();
 
-// ── Task 8: SecurityStamp middleware — invalidate session khi doi password/bi khoa ──
+// ── Task 8: SecurityStamp middleware ──────────────────────────────────────
 app.Use(async (context, next) =>
 {
+    // ── Auto-detect Tailscale connection và log vào Monitor ──────────────
+    var secLog = context.RequestServices.GetService<webxemphim.Services.SecurityLogService>();
+    if (secLog != null)
+    {
+        var ip      = context.Connection.RemoteIpAddress?.ToString() ?? "";
+        var fwdFor  = context.Request.Headers["X-Forwarded-For"].ToString();
+        var realIp  = string.IsNullOrEmpty(fwdFor) ? ip : fwdFor.Split(',')[0].Trim();
+        var path    = context.Request.Path.Value ?? "";
+
+        // Chi log 1 lan moi session, bo qua static files va API poll
+        var alreadyLogged = context.Session.GetString("TailscaleLogged");
+        var isTsIp = realIp.StartsWith("100.") &&
+                     realIp.Split('.').Length == 4 &&
+                     int.TryParse(realIp.Split('.')[1], out var b2) &&
+                     b2 >= 64 && b2 <= 127;
+
+        if (isTsIp && string.IsNullOrEmpty(alreadyLogged)
+            && !path.StartsWith("/Security/LiveFeed")
+            && !path.StartsWith("/css") && !path.StartsWith("/js")
+            && !path.StartsWith("/lib") && !path.StartsWith("/uploads"))
+        {
+            var userName = context.Session.GetString("UserName") ?? "Guest";
+            context.Session.SetString("TailscaleLogged", "1");
+
+            // Log ket noi moi Tailscale vao Monitor
+            secLog.LogVpnTraffic("C->S", "TAILSCALE_CONNECT", userName, realIp,
+                "Encrypted", "WireGuard/ChaCha20-Poly1305",
+                $"New Tailscale connection from {realIp} to {path}",
+                256, 0);
+
+            secLog.LogVpnTraffic("S->C", "TAILSCALE_CONNECT", userName, realIp,
+                "Encrypted", "WireGuard/ChaCha20-Poly1305",
+                $"Server accepted Tailscale tunnel | IP: {realIp} | Tunnel: WireGuard",
+                128, 0);
+        }
+    }
+
+    // ── SecurityStamp check ───────────────────────────────────────────────
     var userId = context.Session.GetString("UserId");
     var stamp  = context.Session.GetString("SecurityStamp");
     if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(stamp))
     {
-        // Chi kiem tra moi 60 giay de giam load DB
         var lastCheck = context.Session.GetString("StampChecked");
         var now       = DateTime.UtcNow;
         if (string.IsNullOrEmpty(lastCheck) ||
             (now - DateTime.Parse(lastCheck)).TotalSeconds > 60)
         {
             using var scope = context.RequestServices.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<webxemphim.Models.ApplicationDbContext>();
+            var schema = scope.ServiceProvider.GetRequiredService<webxemphim.Services.SchemaDataService>();
             if (int.TryParse(userId, out var uid))
             {
-                var user = await db.Users.FindAsync(uid);
+                var user = await schema.GetUserByIdAsync(uid);
                 if (user != null &&
                     (user.SecurityStamp.ToString() != stamp || user.IsLocked))
                 {

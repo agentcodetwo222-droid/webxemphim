@@ -1,12 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using webxemphim.Models;
 
 namespace webxemphim.Services
 {
-    /// <summary>
-    /// Audit log ben vung — luu vao DB, ton tai qua restart.
-    /// Dung song song voi SecurityLogService (in-memory, hien thi realtime).
-    /// </summary>
     public class AuditLogService
     {
         private readonly IServiceScopeFactory _scopeFactory;
@@ -16,19 +11,16 @@ namespace webxemphim.Services
             _scopeFactory = scopeFactory;
         }
 
-        // ── Log Methods ───────────────────────────────────────────────────────
-
         public void Log(string category, string level, string message,
                         int? userId, string userName, string ip, string detail = "")
         {
-            // Fire-and-forget: khong block request
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    using var scope   = _scopeFactory.CreateScope();
-                    var context       = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    context.AuditLogs.Add(new AuditLog
+                    using var scope = _scopeFactory.CreateScope();
+                    var schema = scope.ServiceProvider.GetRequiredService<SchemaDataService>();
+                    await schema.AddAuditLogAsync(new AuditLog
                     {
                         Timestamp = DateTime.UtcNow,
                         Category  = category,
@@ -39,21 +31,12 @@ namespace webxemphim.Services
                         IpAddress = ip,
                         Detail    = detail
                     });
-                    await context.SaveChangesAsync();
 
-                    // Giu toi da 10000 ban ghi, xoa cu nhat
-                    var count = await context.AuditLogs.CountAsync();
+                    var count = await schema.CountAuditLogsAsync();
                     if (count > 10000)
-                    {
-                        var old = await context.AuditLogs
-                            .OrderBy(x => x.Timestamp)
-                            .Take(count - 10000)
-                            .ToListAsync();
-                        context.AuditLogs.RemoveRange(old);
-                        await context.SaveChangesAsync();
-                    }
+                        await schema.DeleteOldAuditLogsAsync(10000);
                 }
-                catch { /* silent — log khong nen crash app */ }
+                catch { }
             });
         }
 
@@ -93,15 +76,8 @@ namespace webxemphim.Services
             => Log("VIP_EXPIRED", "INFO", $"VIP het han: {userName}",
                    userId, userName, "system");
 
-        // ── Query ─────────────────────────────────────────────────────────────
-
         public async Task<List<AuditLog>> GetLatestAsync(
-            ApplicationDbContext context, int count = 100, string? category = null)
-        {
-            var q = context.AuditLogs.AsQueryable();
-            if (!string.IsNullOrEmpty(category))
-                q = q.Where(x => x.Category == category);
-            return await q.OrderByDescending(x => x.Timestamp).Take(count).ToListAsync();
-        }
+            SchemaDataService schema, int count = 100, string? category = null)
+            => await schema.GetLatestAuditLogsAsync(count, category);
     }
 }

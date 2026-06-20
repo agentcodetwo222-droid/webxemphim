@@ -1,32 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using webxemphim.Models;
+using webxemphim.Services;
 
 namespace webxemphim.Infrastructure
 {
-    /// <summary>
-    /// Tiện ích tạo / reset tài khoản Admin trong database.
-    ///
-    /// Cách dùng — gọi từ Program.cs khi start app:
-    ///     await SeedAdmin.RunAsync(app.Services, resetIfExists: false);
-    ///
-    /// Hoặc truyền resetIfExists: true để XÓA admin cũ và tạo lại.
-    /// </summary>
     public static class SeedAdmin
     {
-        // ── Thông tin tài khoản Admin mặc định ────────────────────────────
-        // Password lấy từ env var ADMIN_DEFAULT_PASSWORD, fallback về giá trị ngẫu nhiên
-        // KHÔNG hardcode password vào source code
         private const string DefaultEmail    = "admin@webxemphim.com";
         private const string DefaultUserName = "Administrator";
         private const string DefaultRole     = "Admin";
 
         private static string GetDefaultPassword()
         {
-            // Ưu tiên: biến môi trường ADMIN_DEFAULT_PASSWORD (set trên Railway)
             var envPass = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD");
             if (!string.IsNullOrEmpty(envPass)) return envPass;
 
-            // Fallback: sinh password ngẫu nhiên 16 ký tự an toàn
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
             var rng  = System.Security.Cryptography.RandomNumberGenerator.Create();
             var data = new byte[16];
@@ -34,46 +22,37 @@ namespace webxemphim.Infrastructure
             return new string(data.Select(b => chars[b % chars.Length]).ToArray());
         }
 
-        /// <summary>
-        /// Tạo tài khoản Admin nếu chưa có.
-        /// Nếu resetIfExists = true: xóa admin cũ (theo email) rồi tạo lại.
-        /// </summary>
-        public static async Task RunAsync(
-            IServiceProvider services,
-            bool resetIfExists = false)
+        public static async Task RunAsync(IServiceProvider services, bool resetIfExists = false)
         {
             using var scope   = services.CreateScope();
+            var schema        = scope.ServiceProvider.GetRequiredService<SchemaDataService>();
             var context       = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
             var logger        = loggerFactory.CreateLogger("SeedAdmin");
 
-            // ── Áp dụng migration còn thiếu (nếu có) ─────────────────────
-            await context.Database.MigrateAsync();
+            if (!await context.Database.CanConnectAsync())
+            {
+                logger.LogWarning("SeedAdmin: khong ket noi duoc database — bo qua.");
+                return;
+            }
 
-            // ── Kiểm tra admin hiện tại ────────────────────────────────────
-            var existing = await context.Users
-                .Where(u => u.ROLE == DefaultRole)
-                .ToListAsync();
+            var allUsers = await schema.GetAllUsersAsync();
+            var existing = allUsers.Where(u => u.ROLE == DefaultRole).ToList();
 
             if (existing.Any())
             {
                 if (!resetIfExists)
                 {
-                    logger.LogInformation(
-                        "SeedAdmin: đã có {Count} tài khoản Admin — bỏ qua.",
-                        existing.Count);
+                    logger.LogInformation("SeedAdmin: da co {Count} tai khoan Admin — bo qua.", existing.Count);
                     return;
                 }
 
-                // Reset: xóa toàn bộ admin cũ
-                context.Users.RemoveRange(existing);
-                await context.SaveChangesAsync();
-                logger.LogWarning(
-                    "SeedAdmin: đã xóa {Count} tài khoản Admin cũ.",
-                    existing.Count);
+                foreach (var u in existing)
+                    await schema.DeleteUserAsync(u.UserId);
+
+                logger.LogWarning("SeedAdmin: da xoa {Count} tai khoan Admin cu.", existing.Count);
             }
 
-            // ── Tạo admin mới ─────────────────────────────────────────────
             var defaultPassword = GetDefaultPassword();
             var hashedPassword  = BCrypt.Net.BCrypt.HashPassword(defaultPassword, workFactor: 12);
 
@@ -87,8 +66,7 @@ namespace webxemphim.Infrastructure
                 CreatedAt = DateTime.UtcNow
             };
 
-            context.Users.Add(admin);
-            await context.SaveChangesAsync();
+            await schema.AddUserAsync(admin);
 
             logger.LogInformation(
                 "SeedAdmin: tai khoan Admin da duoc tao. Email={Email} | UserId={Id}",

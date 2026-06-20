@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using webxemphim.Models;
 using webxemphim.Services;
 
@@ -7,21 +6,20 @@ namespace webxemphim.Controllers
 {
     public class WalletController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SchemaDataService    _schema;
         private readonly EncryptionService    _enc;
         private readonly SecurityLogService   _secLog;
         private readonly AuditLogService      _audit;
         private readonly UserService          _userSvc;
 
-        // ── Task 3: Gioi han so tien nap ─────────────────────────────────
-        private const decimal MaxDepositVND = 100_000_000m; // 100 trieu VND / lan nap
-        private const decimal MaxBalanceVND = 500_000_000m; // 500 trieu tong so du
+        private const decimal MaxDepositVND = 100_000_000m;
+        private const decimal MaxBalanceVND = 500_000_000m;
 
-        public WalletController(ApplicationDbContext context, EncryptionService enc,
-                                SecurityLogService secLog, AuditLogService audit,
-                                UserService userSvc)
+        public WalletController(SchemaDataService schema,
+                                EncryptionService enc, SecurityLogService secLog,
+                                AuditLogService audit, UserService userSvc)
         {
-            _context = context;
+            _schema  = schema;
             _enc     = enc;
             _secLog  = secLog;
             _audit   = audit;
@@ -37,14 +35,13 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Login", "Auth");
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == int.Parse(userId));
+            var user = await _schema.GetUserByIdAsync(int.Parse(userId));
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Khong tim thay thong tin user!";
                 return RedirectToAction("Login", "Auth");
             }
 
-            // ── Task 8: Kiem tra SecurityStamp (logout neu da doi password/bi khoa) ──
             var sessionStamp = HttpContext.Session.GetString("SecurityStamp");
             if (sessionStamp != user.SecurityStamp.ToString())
             {
@@ -53,25 +50,19 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Login", "Auth");
             }
 
-            // ── Task 5: Tu dong thu hoi VIP het han ──────────────────────
             if (user.ROLE == "User VIP" &&
                 user.VIPExpiryDate.HasValue &&
                 user.VIPExpiryDate.Value < DateTime.UtcNow)
             {
                 user.ROLE = "User";
-                await _context.SaveChangesAsync();
+                await _schema.UpdateUserAsync(user);
                 HttpContext.Session.SetString("UserRole", "User");
                 _audit.LogVipExpired(user.UserId, user.UserName);
             }
 
-            // ── Task 2: Giai ma Email + Balance ──────────────────────────
             _userSvc.Decrypt(user);
 
-            var rawTxs = await _context.Transactions
-                .Where(t => t.UserId == user.UserId)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-
+            var rawTxs = await _schema.GetTransactionsByUserAsync(user.UserId);
             var decryptedTxs = rawTxs.Select(t => new
             {
                 t.TransactionId,
@@ -97,11 +88,11 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Login", "Auth");
             }
 
-            var currencies = await _context.Currencies.Where(c => c.IsActive).OrderBy(c => c.Code).ToListAsync();
+            var currencies = await _schema.GetActiveCurrenciesAsync();
             if (!currencies.Any())
             {
                 await InitializeCurrencies();
-                currencies = await _context.Currencies.Where(c => c.IsActive).OrderBy(c => c.Code).ToListAsync();
+                currencies = await _schema.GetActiveCurrenciesAsync();
             }
 
             ViewBag.Currencies = currencies;
@@ -125,7 +116,6 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Deposit");
             }
 
-            // ── Task 3: Validation so tien ────────────────────────────────
             if (amount > MaxDepositVND)
             {
                 TempData["ErrorMessage"] = $"So tien nap toi da la {MaxDepositVND:N0} VND moi lan!";
@@ -134,14 +124,14 @@ namespace webxemphim.Controllers
 
             try
             {
-                var user = await _context.Users.FindAsync(int.Parse(userId));
+                var user = await _schema.GetUserByIdAsync(int.Parse(userId));
                 if (user == null)
                 {
                     TempData["ErrorMessage"] = "Không tìm thấy thông tin user!";
                     return RedirectToAction("Login", "Auth");
                 }
 
-                var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == currencyCode && c.IsActive);
+                var currency = await _schema.GetCurrencyByCodeAsync(currencyCode);
                 if (currency == null)
                 {
                     TempData["ErrorMessage"] = "Loại tiền tệ không hợp lệ!";
@@ -149,11 +139,8 @@ namespace webxemphim.Controllers
                 }
 
                 decimal amountInVND = amount * currency.ExchangeRate;
-
-                // ── Task 2: Giai ma Balance hien tai truoc khi cong them ──
                 _userSvc.Decrypt(user);
 
-                // ── Task 3: Kiem tra tong so du khong vuot 500 trieu ──────
                 if (user.Balance + amountInVND > MaxBalanceVND)
                 {
                     TempData["ErrorMessage"] = $"So du khong duoc vuot {MaxBalanceVND:N0} VND!";
@@ -174,10 +161,9 @@ namespace webxemphim.Controllers
                 };
 
                 user.Balance += amountInVND;
-                // ── Task 2: Ma hoa lai Balance truoc khi luu ──────────────
                 _userSvc.EncryptBalance(user);
-                _context.Transactions.Add(transaction);
-                await _context.SaveChangesAsync();
+                await _schema.AddTransactionAsync(transaction);
+                await _schema.UpdateUserAsync(user);
 
                 var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                 _secLog.LogDeposit(user.UserName, amount.ToString("N0"), currencyCode, ip);
@@ -221,7 +207,7 @@ namespace webxemphim.Controllers
 
             try
             {
-                var user = await _context.Users.FindAsync(int.Parse(userId));
+                var user = await _schema.GetUserByIdAsync(int.Parse(userId));
                 if (user == null)
                 {
                     TempData["ErrorMessage"] = "Không tìm thấy thông tin user!";
@@ -242,16 +228,14 @@ namespace webxemphim.Controllers
                         return View();
                 }
 
+                _userSvc.Decrypt(user);
+
                 if (user.Balance < cost)
                 {
                     TempData["ErrorMessage"] = "So du khong du de mua goi VIP nay!";
                     return View();
                 }
 
-                // ── Task 2: Giai ma Balance truoc khi tru ─────────────────
-                _userSvc.Decrypt(user);
-
-                // ── SECURITY: mã hóa các trường nhạy cảm trước khi lưu DB
                 var transaction = new Transaction
                 {
                     UserId       = user.UserId,
@@ -273,10 +257,9 @@ namespace webxemphim.Controllers
                 else
                     user.VIPExpiryDate = DateTime.UtcNow.AddDays(days);
 
-                // ── Task 2: Ma hoa lai Balance ────────────────────────────
                 _userSvc.EncryptBalance(user);
-                _context.Transactions.Add(transaction);
-                await _context.SaveChangesAsync();
+                await _schema.AddTransactionAsync(transaction);
+                await _schema.UpdateUserAsync(user);
 
                 _secLog.LogBuyVIP(user.UserName, package,
                     HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
@@ -297,13 +280,6 @@ namespace webxemphim.Controllers
         {
             try
             {
-                var existingCurrencies = await _context.Currencies.ToListAsync();
-                if (existingCurrencies.Any())
-                {
-                    _context.Currencies.RemoveRange(existingCurrencies);
-                    await _context.SaveChangesAsync();
-                }
-
                 var currencies = new List<Currency>
                 {
                     new Currency { Code = "VND", Name = "Vietnamese Dong",   Symbol = "₫",   ExchangeRate = 1.0m,     IsActive = true },
@@ -327,8 +303,7 @@ namespace webxemphim.Controllers
                     new Currency { Code = "BRL", Name = "Brazilian Real",    Symbol = "R$",  ExchangeRate = 5000.0m,  IsActive = true }
                 };
 
-                _context.Currencies.AddRange(currencies);
-                await _context.SaveChangesAsync();
+                await _schema.ReplaceAllCurrenciesAsync(currencies);
             }
             catch (Exception ex)
             {

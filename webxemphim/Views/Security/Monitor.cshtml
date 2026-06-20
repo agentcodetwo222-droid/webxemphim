@@ -118,6 +118,22 @@
     <span id="ts-status" style="margin-left:8px;font-size:.75rem;color:#666">No Tailscale yet</span></span>
   </div>
   <div style="padding:16px">
+
+    @* Thong bao ket noi *@
+    <div id="ts-alert" style="display:none;background:#0a1a2a;border:2px solid #3498db;border-radius:10px;padding:14px 18px;margin-bottom:16px;animation:fadeIn .5s">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:12px;height:12px;border-radius:50%;background:#3498db;animation:pulse 1.2s infinite;flex-shrink:0"></div>
+        <div>
+          <div style="color:#3498db;font-weight:bold;font-size:.95rem" id="ts-alert-title">Tailscale Connected</div>
+          <div style="color:#aaa;font-size:.8rem;margin-top:2px" id="ts-alert-detail">--</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-family:monospace;color:#2ecc71;font-size:.85rem" id="ts-alert-ip">--</div>
+          <div style="color:#666;font-size:.72rem" id="ts-alert-time">--</div>
+        </div>
+      </div>
+    </div>
+
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
       <div style="background:#1a1b2a;border:1px solid #2980b9;border-radius:8px;padding:12px;text-align:center">
         <div style="font-size:1.5rem;font-weight:bold;color:#3498db" id="ts-total">0</div>
@@ -350,6 +366,26 @@ async function poll(){
       document.getElementById('ts-status').textContent='Last: '+ts[0].time+' UTC | IP:'+ts[0].ipAddress;
       document.getElementById('ts-status').style.color='#3498db';
       prepend('ts-feed',ts.map(row).join(''));
+
+      // Hien thi alert thong bao ket noi Tailscale
+      const connectEvt = ts.find(e => e.category === 'TAILSCALE_CONNECT' || e.category === 'VPN_C2S');
+      if (connectEvt) {
+        const alert = document.getElementById('ts-alert');
+        const isTsConn = connectEvt.category === 'TAILSCALE_CONNECT';
+        alert.style.display = 'block';
+        alert.style.borderColor = '#3498db';
+        document.getElementById('ts-alert-title').textContent =
+          isTsConn ? 'Da co ket noi Tailscale moi!' : 'Tailscale Traffic phat hien!';
+        document.getElementById('ts-alert-detail').textContent = connectEvt.detail;
+        document.getElementById('ts-alert-ip').textContent = 'IP: ' + connectEvt.ipAddress;
+        document.getElementById('ts-alert-time').textContent = connectEvt.time + ' UTC';
+        // Nhap nhay 3 lan de thu hut su chu y
+        let cnt = 0;
+        const blink = setInterval(() => {
+          alert.style.opacity = alert.style.opacity === '0.4' ? '1' : '0.4';
+          if (++cnt >= 6) { clearInterval(blink); alert.style.opacity = '1'; }
+        }, 300);
+      }
     }
 
     const vpn=ne.filter(e=>['VPN_C2S','VPN_S2C'].includes(e.category));

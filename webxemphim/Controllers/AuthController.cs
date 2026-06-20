@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using webxemphim.Models;
 using webxemphim.Services;
 
@@ -7,21 +6,21 @@ namespace webxemphim.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly ApplicationDbContext    _context;
-        private readonly ILogger<AuthController> _logger;
-        private readonly EncryptionService       _enc;
-        private readonly SecurityLogService      _secLog;
-        private readonly AuditLogService         _audit;
-        private readonly UserService             _userSvc;
+        private readonly SchemaDataService       _schema;
+        private readonly ILogger<AuthController>   _logger;
+        private readonly EncryptionService         _enc;
+        private readonly SecurityLogService        _secLog;
+        private readonly AuditLogService           _audit;
+        private readonly UserService               _userSvc;
 
         private const int MaxLoginAttempts  = 5;
         private const int LockoutMinutes    = 15;
 
-        public AuthController(ApplicationDbContext context, ILogger<AuthController> logger,
+        public AuthController(SchemaDataService schema, ILogger<AuthController> logger,
                               EncryptionService enc, SecurityLogService secLog,
                               AuditLogService audit, UserService userSvc)
         {
-            _context = context;
+            _schema  = schema;
             _logger  = logger;
             _enc     = enc;
             _secLog  = secLog;
@@ -29,10 +28,8 @@ namespace webxemphim.Controllers
             _userSvc = userSvc;
         }
 
-        // GET: Auth/Login
         public IActionResult Login() => View();
 
-        // POST: Auth/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string identifier, string password)
@@ -46,7 +43,6 @@ namespace webxemphim.Controllers
             var normalized = identifier.Trim().ToLowerInvariant();
             var clientKey  = $"{GetClientIp()}:{normalized}";
 
-            // ── Task 6: Lockout DB ──────────────────────────────────────────
             if (await IsLockedOutAsync(clientKey))
             {
                 _secLog.LogLockout(normalized, GetClientIp());
@@ -55,9 +51,7 @@ namespace webxemphim.Controllers
                 return View();
             }
 
-            // Tim user theo email HOAC username
-            // Task 2: Email da ma hoa → phai load tat ca roi giai ma so sanh
-            var allUsers = await _context.Users.ToListAsync();
+            var allUsers = await _schema.GetAllUsersAsync();
             var user = allUsers.FirstOrDefault(u =>
             {
                 try
@@ -69,7 +63,6 @@ namespace webxemphim.Controllers
                 catch { return u.UserName.ToLowerInvariant() == normalized; }
             });
 
-            // ── Task 8: Kiem tra tai khoan bi khoa boi Admin ─────────────
             if (user != null && user.IsLocked)
             {
                 TempData["ErrorMessage"] = "Tai khoan cua ban da bi khoa. Vui long lien he quan tri vien.";
@@ -95,7 +88,7 @@ namespace webxemphim.Controllers
             _userSvc.Decrypt(user!);
 
             HttpContext.Session.Clear();
-            HttpContext.Session.SetString("UserId",        user.UserId.ToString());
+            HttpContext.Session.SetString("UserId",        user!.UserId.ToString());
             HttpContext.Session.SetString("UserName",      user.UserName);
             HttpContext.Session.SetString("UserRole",      user.ROLE);
             HttpContext.Session.SetString("SecurityStamp", user.SecurityStamp.ToString());
@@ -109,10 +102,8 @@ namespace webxemphim.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // GET: Auth/Register
         public IActionResult Register() => View();
 
-        // POST: Auth/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(
@@ -127,7 +118,6 @@ namespace webxemphim.Controllers
                 return View();
             }
 
-            // ── Task 4: Password complexity ────────────────────────────────
             var pwErr = UserService.ValidatePassword(password);
             if (pwErr != null)
             {
@@ -142,9 +132,7 @@ namespace webxemphim.Controllers
             }
 
             var normalizedEmail = email.Trim().ToLowerInvariant();
-
-            // ── Task 2: Kiem tra email trung (phai giai ma roi so sanh) ───
-            var allUsers = await _context.Users.ToListAsync();
+            var allUsers = await _schema.GetAllUsersAsync();
             if (_userSvc.EmailExists(allUsers, normalizedEmail))
             {
                 TempData["ErrorMessage"] = "Email da duoc su dung!";
@@ -162,14 +150,12 @@ namespace webxemphim.Controllers
                 Balance  = 0
             };
 
-            // ── Task 2: Ma hoa Email + Balance truoc khi luu ──────────────
-            newUser.EMAIL = normalizedEmail; // set truoc de EncryptForSave ma hoa
+            newUser.EMAIL = normalizedEmail;
             _userSvc.EncryptForSave(newUser);
 
             try
             {
-                _context.Users.Add(newUser);
-                await _context.SaveChangesAsync();
+                await _schema.AddUserAsync(newUser);
                 _secLog.LogRegister(newUser.UserName, GetClientIp());
                 _secLog.LogRegisterEncryption(
                     newUser.UserName, GetClientIp(),
@@ -187,7 +173,6 @@ namespace webxemphim.Controllers
             }
         }
 
-        // GET: Auth/Logout
         public IActionResult Logout()
         {
             var userId   = HttpContext.Session.GetString("UserId");
@@ -200,21 +185,17 @@ namespace webxemphim.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // ── Task 6: Lockout DB helpers ───────────────────────────────────────
-
         private async Task<bool> IsLockedOutAsync(string clientKey)
         {
-            var record = await _context.LoginAttempts
-                .FirstOrDefaultAsync(x => x.ClientKey == clientKey);
+            var record = await _schema.GetLoginAttemptAsync(clientKey);
             if (record == null) return false;
             if (!record.IsLocked) return false;
             if (record.LockedUntil.HasValue && DateTime.UtcNow > record.LockedUntil.Value)
             {
-                // Het thoi gian khoa → reset
-                record.IsLocked   = false;
-                record.FailCount  = 0;
+                record.IsLocked    = false;
+                record.FailCount   = 0;
                 record.LockedUntil = null;
-                await _context.SaveChangesAsync();
+                await _schema.UpdateLoginAttemptAsync(record);
                 return false;
             }
             return true;
@@ -222,12 +203,11 @@ namespace webxemphim.Controllers
 
         private async Task RecordFailedAttemptAsync(string clientKey)
         {
-            var record = await _context.LoginAttempts
-                .FirstOrDefaultAsync(x => x.ClientKey == clientKey);
+            var record = await _schema.GetLoginAttemptAsync(clientKey);
             if (record == null)
             {
                 record = new LoginAttempt { ClientKey = clientKey, FailCount = 1, LastAttempt = DateTime.UtcNow };
-                _context.LoginAttempts.Add(record);
+                await _schema.AddLoginAttemptAsync(record);
             }
             else
             {
@@ -238,20 +218,19 @@ namespace webxemphim.Controllers
                     record.IsLocked    = true;
                     record.LockedUntil = DateTime.UtcNow.AddMinutes(LockoutMinutes);
                 }
+                await _schema.UpdateLoginAttemptAsync(record);
             }
-            await _context.SaveChangesAsync();
         }
 
         private async Task ClearFailedAttemptsAsync(string clientKey)
         {
-            var record = await _context.LoginAttempts
-                .FirstOrDefaultAsync(x => x.ClientKey == clientKey);
+            var record = await _schema.GetLoginAttemptAsync(clientKey);
             if (record != null)
             {
                 record.FailCount   = 0;
                 record.IsLocked    = false;
                 record.LockedUntil = null;
-                await _context.SaveChangesAsync();
+                await _schema.UpdateLoginAttemptAsync(record);
             }
         }
 

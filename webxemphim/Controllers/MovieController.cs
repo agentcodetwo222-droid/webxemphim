@@ -7,12 +7,15 @@ namespace webxemphim.Controllers
 {
     public class MovieController : Controller
     {
+        private readonly SchemaDataService    _schema;
         private readonly ApplicationDbContext _context;
         private readonly EncryptionService    _enc;
         private readonly SecurityLogService   _secLog;
 
-        public MovieController(ApplicationDbContext context, EncryptionService enc, SecurityLogService secLog)
+        public MovieController(SchemaDataService schema, ApplicationDbContext context,
+                               EncryptionService enc, SecurityLogService secLog)
         {
+            _schema  = schema;
             _context = context;
             _enc     = enc;
             _secLog  = secLog;
@@ -22,14 +25,10 @@ namespace webxemphim.Controllers
         public async Task<IActionResult> Index()
         {
             var userRole = HttpContext.Session.GetString("UserRole");
-
             await EnsureSampleMoviesExist();
 
-            List<Movie> movies;
-            if (userRole == "Admin")
-                movies = await _context.Movies.ToListAsync();
-            else
-                movies = await _context.Movies.Where(m => m.IsAvailable).ToListAsync();
+            var isAdmin = userRole == "Admin";
+            var movies = await _schema.GetMoviesFilteredAsync(isAdmin, availableOnly: !isAdmin);
 
             ViewBag.UserRole = userRole;
             return View(DecryptMovies(movies));
@@ -39,12 +38,9 @@ namespace webxemphim.Controllers
         [Route("Movie/Detail/{id?}")]
         public async Task<IActionResult> Detail(int? id)
         {
-            Movie? movie;
-
-            if (id.HasValue)
-                movie = await _context.Movies.FindAsync(id.Value);
-            else
-                movie = await _context.Movies.FirstOrDefaultAsync();
+            Movie? movie = id.HasValue
+                ? await _schema.GetMovieByIdAsync(id.Value)
+                : await _schema.GetFirstMovieAsync();
 
             if (movie == null)
             {
@@ -55,21 +51,19 @@ namespace webxemphim.Controllers
             var userRole = HttpContext.Session.GetString("UserRole");
             var userId   = HttpContext.Session.GetString("UserId");
 
-            // ── Task 5: Tu dong thu hoi VIP het han ──────────────────────
             if (!string.IsNullOrEmpty(userId) && int.TryParse(userId, out var uid5))
             {
-                var dbUser = await _context.Users.FindAsync(uid5);
+                var dbUser = await _schema.GetUserByIdAsync(uid5);
                 if (dbUser is { ROLE: "User VIP", VIPExpiryDate: not null }
                     && dbUser.VIPExpiryDate.Value < DateTime.UtcNow)
                 {
                     dbUser.ROLE = "User";
-                    await _context.SaveChangesAsync();
+                    await _schema.UpdateUserAsync(dbUser);
                     HttpContext.Session.SetString("UserRole", "User");
                     userRole = "User";
                 }
             }
 
-            // ── SECURITY: kiểm tra VIP đúng — chặn cả user chưa đăng nhập
             if (movie.IsVipOnly)
             {
                 bool hasAccess = !string.IsNullOrEmpty(userId)
@@ -101,7 +95,7 @@ namespace webxemphim.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [RequestSizeLimit(600 * 1024 * 1024)] // 600MB cho video lớn
+        [RequestSizeLimit(600 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 600 * 1024 * 1024)]
         public async Task<IActionResult> Create([Bind("Title,Description,Genre,Country,Year,ImageUrl,VideoUrl,IsVipOnly,IsAvailable,CategoryName")] Movie movie,
             IFormFile? imageFile, IFormFile? videoFile, string? imageType, string? videoType)
@@ -115,11 +109,9 @@ namespace webxemphim.Controllers
                     return RedirectToAction("Index");
                 }
 
-                // ── Bỏ qua ModelState error cho ImageUrl/VideoUrl khi dùng file upload ──
                 if (imageType == "file") ModelState.Remove("ImageUrl");
                 if (videoType == "file") ModelState.Remove("VideoUrl");
 
-                // ── Xử lý ảnh ──────────────────────────────────────────────────────────
                 if (imageType == "file" && imageFile != null && imageFile.Length > 0)
                 {
                     if (imageFile.Length > 5 * 1024 * 1024)
@@ -138,16 +130,14 @@ namespace webxemphim.Controllers
                     }
 
                     var imgDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images");
-                    Directory.CreateDirectory(imgDir); // tao neu chua co
+                    Directory.CreateDirectory(imgDir);
                     var imgFile = Guid.NewGuid() + ext;
                     using var s = new FileStream(Path.Combine(imgDir, imgFile), FileMode.Create);
                     await imageFile.CopyToAsync(s);
-                    // Fix lỗi 2: đánh dấu đã encrypt bằng flag riêng thay vì StartsWith check
                     movie.ImageUrl = _enc.Encrypt("/uploads/images/" + imgFile);
-                    imageType = "already_encrypted"; // đánh dấu không encrypt thêm
+                    imageType = "already_encrypted";
                 }
 
-                // ── Xử lý video ──────────────────────────────────────────────────────────
                 if (videoType == "file" && videoFile != null && videoFile.Length > 0)
                 {
                     if (videoFile.Length > 500 * 1024 * 1024)
@@ -166,15 +156,14 @@ namespace webxemphim.Controllers
                     }
 
                     var vidDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "videos");
-                    Directory.CreateDirectory(vidDir); // tao neu chua co
+                    Directory.CreateDirectory(vidDir);
                     var vidFile = Guid.NewGuid() + ext;
                     using var s = new FileStream(Path.Combine(vidDir, vidFile), FileMode.Create);
                     await videoFile.CopyToAsync(s);
                     movie.VideoUrl = _enc.Encrypt("/uploads/videos/" + vidFile);
-                    videoType = "already_encrypted"; // đánh dấu không encrypt thêm
+                    videoType = "already_encrypted";
                 }
 
-                // ── Kiểm tra ModelState sau khi xử lý file ──────────────────────────────
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values
@@ -185,15 +174,13 @@ namespace webxemphim.Controllers
                     return View(movie);
                 }
 
-                // ── Fix lỗi 2: Chỉ encrypt URL thủ công, KHÔNG encrypt nếu đã upload file ──
                 if (imageType != "already_encrypted" && !string.IsNullOrEmpty(movie.ImageUrl))
                     movie.ImageUrl = _enc.Encrypt(movie.ImageUrl);
 
                 if (videoType != "already_encrypted" && !string.IsNullOrEmpty(movie.VideoUrl))
                     movie.VideoUrl = _enc.Encrypt(movie.VideoUrl);
 
-                _context.Add(movie);
-                await _context.SaveChangesAsync();
+                await _schema.AddMovieAsync(movie);
                 _secLog.LogEncrypt("Movie.ImageUrl + VideoUrl", movie.Title, "AES-256-GCM", 0);
                 TempData["SuccessMessage"] = "Thêm phim thành công!";
                 return RedirectToAction(nameof(Index));
@@ -222,7 +209,7 @@ namespace webxemphim.Controllers
 
             if (id == null) return NotFound();
 
-            var movie = await _context.Movies.FindAsync(id);
+            var movie = await _schema.GetMovieByIdAsync(id.Value);
             if (movie == null) return NotFound();
 
             ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
@@ -246,14 +233,11 @@ namespace webxemphim.Controllers
             {
                 try
                 {
-                    // Giai ma URL hien tai truoc khi encrypt lai
-                    // (tranh encrypt nhieu lan neu admin sua ma khong doi URL)
-                    var existing = await _context.Movies.AsNoTracking().FirstOrDefaultAsync(m => m.MovieId == id);
+                    var existing = await _schema.GetMovieByIdAsync(id);
                     if (existing != null)
                     {
                         var oldImage = _enc.Decrypt(existing.ImageUrl ?? "");
                         var oldVideo = _enc.Decrypt(existing.VideoUrl ?? "");
-                        // Chi encrypt neu admin nhap URL moi (khac URL cu da giai ma)
                         movie.ImageUrl = (movie.ImageUrl == oldImage)
                             ? existing.ImageUrl!
                             : _enc.Encrypt(movie.ImageUrl ?? "");
@@ -267,15 +251,14 @@ namespace webxemphim.Controllers
                         if (!string.IsNullOrEmpty(movie.VideoUrl)) movie.VideoUrl = _enc.Encrypt(movie.VideoUrl);
                     }
 
-                    _context.Update(movie);
-                    await _context.SaveChangesAsync();
+                    await _schema.UpdateMovieAsync(movie);
                     _secLog.LogEncrypt("Movie.ImageUrl + VideoUrl (Edit)", movie.Title,
                         "Base64(Nonce+Tag+Cipher)", 0);
                     TempData["SuccessMessage"] = "Cập nhật phim thành công!";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!MovieExists(movie.MovieId)) return NotFound();
+                    if (!await _schema.MovieExistsAsync(movie.MovieId)) return NotFound();
                     else throw;
                 }
                 return RedirectToAction(nameof(Index));
@@ -295,7 +278,7 @@ namespace webxemphim.Controllers
 
             if (id == null) return NotFound();
 
-            var movie = await _context.Movies.FirstOrDefaultAsync(m => m.MovieId == id);
+            var movie = await _schema.GetMovieByIdAsync(id.Value);
             if (movie == null) return NotFound();
 
             return View(movie);
@@ -312,12 +295,9 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Index");
             }
 
-            var movie = await _context.Movies.FindAsync(id);
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            if (movie != null)
+            if (await _schema.MovieExistsAsync(id))
             {
-                _context.Movies.Remove(movie);
-                await _context.SaveChangesAsync();
+                await _schema.DeleteMovieAsync(id);
                 _secLog.LogEncrypt("Movie.Delete", $"MovieId={id}", "Xoa khoi DB", 0);
                 TempData["SuccessMessage"] = "Xóa phim thành công!";
             }
@@ -325,21 +305,13 @@ namespace webxemphim.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool MovieExists(int id)
-        {
-            return _context.Movies.Any(e => e.MovieId == id);
-        }
-
         [HttpGet]
         [Route("Movie/Player/{id?}")]
         public async Task<IActionResult> Player(int? id)
         {
-            Movie? movie;
-
-            if (id.HasValue)
-                movie = await _context.Movies.FindAsync(id.Value);
-            else
-                movie = await _context.Movies.FirstOrDefaultAsync();
+            Movie? movie = id.HasValue
+                ? await _schema.GetMovieByIdAsync(id.Value)
+                : await _schema.GetFirstMovieAsync();
 
             if (movie == null)
             {
@@ -350,7 +322,6 @@ namespace webxemphim.Controllers
             var userRole = HttpContext.Session.GetString("UserRole");
             var userId   = HttpContext.Session.GetString("UserId");
 
-            // ── SECURITY: kiểm tra VIP đúng — chặn cả user chưa đăng nhập
             if (movie.IsVipOnly)
             {
                 bool hasAccess = !string.IsNullOrEmpty(userId)
@@ -365,7 +336,6 @@ namespace webxemphim.Controllers
             ViewBag.UserRole = userRole;
             ViewBag.Movie = movie;
 
-            // Log giai ma VideoUrl de hien thi trong Monitor
             var decrypted = DecryptMovie(movie);
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -390,11 +360,8 @@ namespace webxemphim.Controllers
             var userRole = HttpContext.Session.GetString("UserRole");
             await EnsureSampleMoviesExist();
 
-            List<Movie> seriesMovies;
-            if (userRole == "Admin")
-                seriesMovies = await _context.Movies.Where(m => m.Genre.Contains("Phim Bộ")).ToListAsync();
-            else
-                seriesMovies = await _context.Movies.Where(m => m.Genre.Contains("Phim Bộ") && m.IsAvailable).ToListAsync();
+            var isAdmin = userRole == "Admin";
+            var seriesMovies = await _schema.GetMoviesFilteredAsync(isAdmin, availableOnly: !isAdmin, genreContains: "Phim Bộ");
 
             ViewBag.UserRole = userRole;
             return View(DecryptMovies(seriesMovies));
@@ -402,9 +369,9 @@ namespace webxemphim.Controllers
 
         private async Task EnsureSampleMoviesExist()
         {
-            if (!await _context.Movies.AnyAsync(m => m.Title.Contains("Tazan")))
+            if (!await _schema.AnyMovieTitleContainsAsync("Tazan"))
             {
-                _context.Movies.Add(new Movie
+                await _schema.AddMovieAsync(new Movie
                 {
                     Title = "Tazan Nhí: Cuộc Phiêu Lưu Kỳ Thú",
                     Description = "Tazan Nhí là một cậu bé dũng cảm sống trong rừng rậm.",
@@ -413,12 +380,11 @@ namespace webxemphim.Controllers
                     VideoUrl = _enc.Encrypt("/videos/tazannhi/tazannhitap1.mp4"),
                     IsVipOnly = false, IsAvailable = true
                 });
-                await _context.SaveChangesAsync();
             }
 
-            if (!await _context.Movies.AnyAsync(m => m.Title.Contains("Conan")))
+            if (!await _schema.AnyMovieTitleContainsAsync("Conan"))
             {
-                _context.Movies.Add(new Movie
+                await _schema.AddMovieAsync(new Movie
                 {
                     Title = "Thám Tử Conan: Tập 1",
                     Description = "Kudo Shinichi là một thám tử trung học nổi tiếng.",
@@ -427,12 +393,11 @@ namespace webxemphim.Controllers
                     VideoUrl = _enc.Encrypt("/videos/conan/conan-ep1.mp4"),
                     IsVipOnly = false, IsAvailable = true
                 });
-                await _context.SaveChangesAsync();
             }
 
-            if (!await _context.Movies.AnyAsync(m => m.Title.Contains("One Piece")))
+            if (!await _schema.AnyMovieTitleContainsAsync("One Piece"))
             {
-                _context.Movies.Add(new Movie
+                await _schema.AddMovieAsync(new Movie
                 {
                     Title = "One Piece: Tập 1 - Tôi là Luffy",
                     Description = "Monkey D. Luffy là một cậu bé mơ ước trở thành Vua Hải Tặc.",
@@ -441,11 +406,9 @@ namespace webxemphim.Controllers
                     VideoUrl = _enc.Encrypt("/videos/conan/conan-ep1.mp4"),
                     IsVipOnly = false, IsAvailable = true
                 });
-                await _context.SaveChangesAsync();
             }
         }
 
-        /// <summary>Giải mã ImageUrl và VideoUrl của movie trước khi đưa ra View.</summary>
         private Movie DecryptMovie(Movie m)
         {
             m.ImageUrl = _enc.Decrypt(m.ImageUrl);

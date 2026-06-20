@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using webxemphim.Models;
 using webxemphim.Services;
 
@@ -7,15 +6,15 @@ namespace webxemphim.Controllers
 {
     public class FavoriteController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SchemaDataService _schema;
         private readonly EncryptionService _enc;
         private readonly ILogger<FavoriteController> _logger;
 
-        public FavoriteController(ApplicationDbContext context, EncryptionService enc, ILogger<FavoriteController> logger)
+        public FavoriteController(SchemaDataService schema, EncryptionService enc, ILogger<FavoriteController> logger)
         {
-            _context = context;
-            _enc     = enc;
-            _logger  = logger;
+            _schema = schema;
+            _enc    = enc;
+            _logger = logger;
         }
 
         private int? GetCurrentUserId()
@@ -23,10 +22,8 @@ namespace webxemphim.Controllers
             var s = HttpContext.Session.GetString("UserId");
             return int.TryParse(s, out var id) ? id : null;
         }
-
         private bool IsAdmin() => HttpContext.Session.GetString("UserRole") == "Admin";
 
-        // ── Helper: giải mã MovieImage trước khi đưa ra View ───────────────
         private FavoriteViewModel Decrypt(Favorite f) => new FavoriteViewModel
         {
             FavoriteId = f.FavoriteId,
@@ -34,11 +31,10 @@ namespace webxemphim.Controllers
             UserName   = f.UserName,
             MovieId    = f.MovieId,
             MovieTitle = f.MovieTitle,
-            MovieImage = _enc.Decrypt(f.MovieImage),  // ── SECURITY: giải mã AES-256-GCM
+            MovieImage = _enc.Decrypt(f.MovieImage),
             AddedAt    = f.AddedAt
         };
 
-        // ── GET: Favorite/Index — danh sách phim yêu thích của user ────────
         public async Task<IActionResult> Index()
         {
             var userId = GetCurrentUserId();
@@ -48,20 +44,14 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Login", "Auth");
             }
 
-            List<Favorite> raw;
-            if (IsAdmin())
-                raw = await _context.Favorites.OrderByDescending(f => f.AddedAt).ToListAsync();
-            else
-                raw = await _context.Favorites
-                          .Where(f => f.UserId == userId)
-                          .OrderByDescending(f => f.AddedAt)
-                          .ToListAsync();
+            var raw = IsAdmin()
+                ? await _schema.GetAllFavoritesAsync()
+                : await _schema.GetFavoritesByUserAsync(userId.Value);
 
             ViewBag.IsAdmin = IsAdmin();
             return View(raw.Select(Decrypt).ToList());
         }
 
-        // ── POST: Favorite/Add — thêm phim vào yêu thích ──────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Add(int movieId)
@@ -73,20 +63,15 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Login", "Auth");
             }
 
-            // Kiểm tra đã thêm chưa
-            var exists = await _context.Favorites
-                .AnyAsync(f => f.UserId == userId && f.MovieId == movieId);
-            if (exists)
+            if (await _schema.FavoriteExistsAsync(userId.Value, movieId))
             {
                 TempData["ErrorMessage"] = "Phim đã có trong danh sách yêu thích!";
                 return RedirectToAction("Detail", "Movie", new { id = movieId });
             }
 
-            // Lấy thông tin phim để lưu kèm (denormalized)
-            var movie = await _context.Movies.FindAsync(movieId);
+            var movie = await _schema.GetMovieByIdAsync(movieId);
             if (movie == null) return NotFound();
 
-            // ── SECURITY: MovieImage lấy từ DB đang là ciphertext → giải mã để dùng đúng
             var decryptedImage = _enc.Decrypt(movie.ImageUrl);
 
             var fav = new Favorite
@@ -95,19 +80,17 @@ namespace webxemphim.Controllers
                 UserName   = HttpContext.Session.GetString("UserName") ?? string.Empty,
                 MovieId    = movieId,
                 MovieTitle = movie.Title,
-                MovieImage = _enc.Encrypt(decryptedImage),  // ── SECURITY: mã hóa lại AES-256-GCM
+                MovieImage = _enc.Encrypt(decryptedImage),
                 AddedAt    = DateTime.UtcNow
             };
 
-            _context.Favorites.Add(fav);
-            await _context.SaveChangesAsync();
+            await _schema.AddFavoriteAsync(fav);
 
             _logger.LogInformation("Favorite added. UserId={UserId} MovieId={MovieId}", userId, movieId);
             TempData["SuccessMessage"] = $"Đã thêm \"{movie.Title}\" vào yêu thích!";
             return RedirectToAction("Detail", "Movie", new { id = movieId });
         }
 
-        // ── POST: Favorite/Remove — xóa khỏi yêu thích ───────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Remove(int favoriteId)
@@ -119,18 +102,16 @@ namespace webxemphim.Controllers
                 return RedirectToAction("Login", "Auth");
             }
 
-            var fav = await _context.Favorites.FindAsync(favoriteId);
+            var fav = await _schema.GetFavoriteByIdAsync(favoriteId);
             if (fav == null) return NotFound();
 
-            // ── SECURITY: user chỉ xóa được của mình
             if (!IsAdmin() && fav.UserId != userId)
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền xóa mục này!";
                 return RedirectToAction(nameof(Index));
             }
 
-            _context.Favorites.Remove(fav);
-            await _context.SaveChangesAsync();
+            await _schema.DeleteFavoriteAsync(fav);
 
             _logger.LogInformation("Favorite removed. FavoriteId={Id} UserId={UserId}", favoriteId, userId);
             TempData["SuccessMessage"] = "Đã xóa khỏi danh sách yêu thích!";
@@ -138,7 +119,6 @@ namespace webxemphim.Controllers
         }
     }
 
-    // ── ViewModel: dữ liệu đã giải mã để dùng trong View ──────────────────
     public class FavoriteViewModel
     {
         public int      FavoriteId { get; set; }
@@ -146,7 +126,7 @@ namespace webxemphim.Controllers
         public string   UserName   { get; set; } = string.Empty;
         public int      MovieId    { get; set; }
         public string   MovieTitle { get; set; } = string.Empty;
-        public string   MovieImage { get; set; } = string.Empty; // plaintext sau khi giải mã
+        public string   MovieImage { get; set; } = string.Empty;
         public DateTime AddedAt    { get; set; }
     }
 }
